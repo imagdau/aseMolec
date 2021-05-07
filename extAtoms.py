@@ -55,6 +55,18 @@ def del_prop(db):
             if 'force' in k:
                 del at.arrays[k]
 
+#deletes all properties which contain tag
+def del_prop_by_tag(db, tag):
+    for at in db:
+        keys = list(at.info.keys())
+        for k in keys:
+            if tag in k:
+                del at.info[k]
+        keys = list(at.arrays.keys())
+        for k in keys:
+            if tag in k:
+                del at.arrays[k]
+
 #returns desired property for list of Atoms
 def get_prop(db, type, prop=''):
     if type == 'info':
