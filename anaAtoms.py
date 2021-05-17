@@ -6,6 +6,17 @@ import numpy as np
 import extAtoms as ea
 import scipy.spatial
 
+#computes molID for single config, not adding molID to atoms.arrays
+def find_molec(at, fct=1.0):
+    #from https://wiki.fysik.dtu.dk/ase/ase/neighborlist.html
+    cutOff = neighborlist.natural_cutoffs(at, mult=fct)
+    nbLst = neighborlist.NeighborList(cutOff, self_interaction=False, bothways=True)
+    nbLst.update(at)
+    conMat = nbLst.get_connectivity_matrix(sparse=True)
+    Nmol, molID = sparse.csgraph.connected_components(conMat)
+    Natoms, Nmols = np.unique(np.unique(molID, return_counts=True)[1], return_counts=True)
+    return list(zip(Nmols,Natoms))
+
 #computes molIDs
 def find_molecs(db, fct=1.0):
     for at in db:
@@ -126,3 +137,17 @@ def find_voids_grid(db, dx=1.0, xmin=1.0, prog=False):
         del at_wgrid[list(ids)]
         db_grid.append(at_wgrid)
     return db_grid
+
+def track_initial_bonds(db, fct=1, prog=False):
+    cutOff = neighborlist.natural_cutoffs(db[0], mult=fct)
+    nbLst = neighborlist.NeighborList(cutOff, self_interaction=False, bothways=False)
+    nbLst.update(db[0])
+    conMat = nbLst.get_connectivity_matrix(sparse=False)
+    dists = db[0].get_all_distances(mic=True)[conMat==True].reshape(-1,1)
+    iter = 0
+    for at in db[1:]:
+        if prog:
+            iter += 1
+            print(iter)
+        dists = np.hstack([dists, at.get_all_distances(mic=True)[conMat==True].reshape(-1,1)])
+    return dists

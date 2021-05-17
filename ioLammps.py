@@ -5,6 +5,7 @@ import struct
 from os.path import splitext
 from collections import deque
 import numpy as np
+import math
 
 from ase.atoms import Atoms
 from ase.quaternions import Quaternions
@@ -47,16 +48,19 @@ def lammps_data_to_ase_atoms(
     """
     # data array of doubles
     ids = data[:, colnames.index("id")].astype(int)
-    types = data[:, colnames.index("type")].astype(int)
-    if order:
-        sort_order = np.argsort(ids)
-        ids = ids[sort_order]
-        data = data[sort_order, :]
-        types = types[sort_order]
+    if "types" in colnames:
+        types = data[:, colnames.index("type")].astype(int)
+        if order:
+            sort_order = np.argsort(ids)
+            ids = ids[sort_order]
+            data = data[sort_order, :]
+            types = types[sort_order]
 
-    # reconstruct types from given specorder
-    if specorder:
-        types = [specorder[t - 1] for t in types]
+        # reconstruct types from given specorder
+        if specorder:
+            types = [specorder[t - 1] for t in types]
+    else:
+        types = [1]*len(ids)
 
     def get_quantity(labels, quantity=None):
         try:
@@ -267,6 +271,32 @@ def read_lammps_dump_text(fileobj, index=-1, **kwargs):
             break
 
     return images[index]
+
+@writer
+def write_lammps_dump_text(fd, db, prog=False):
+    i = 0
+    Nmax = 0
+    for at in db:
+        if len(at) > Nmax:
+            Nmax = len(at)
+    for at in db:
+        fd.write("ITEM: TIMESTEP \n")
+        fd.write("{0} \n".format(i))
+        fd.write("ITEM: NUMBER OF ATOMS \n")
+        fd.write("{0} \n".format(Nmax))
+        fd.write("ITEM: BOX BOUNDS pp pp pp \n") #needs to be extended
+        lims = np.diag(at.cell)
+        for j in range(3):
+            fd.write("{0:23.17e} {1:23.17e} \n".format(*[0,lims[j]]))
+        i += 1
+        fd.write("ITEM: ATOMS id mass xu yu zu \n") #needs to be extended
+        for j in range(len(at)):
+            fd.write("{0:>5} {1:8.3f} {2:23.17f} {3:23.17f} {4:23.17f}\n".format(*[j+1, at.get_masses()[j]]+list(at.positions[j])))
+        for j in range(len(at),Nmax): #the rest are dummy atoms, because VMD can only read lammpstrj with fixed number of atoms
+            #cannot select by mass, because mass is decided by vmd in the first frame, so use dummy location
+            fd.write("{0:>5} {1:8.3f} {2:23.17f} {3:23.17f} {4:23.17f}\n".format(*[j+1, 1.0, -10.1, -10.1, -10.1]))
+        if prog:
+            print(i)
 
 #copied from https://wiki.fysik.dtu.dk/ase/dev/_modules/ase/io/lammpsdata.html
 @writer
