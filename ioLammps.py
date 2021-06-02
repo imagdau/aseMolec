@@ -209,7 +209,7 @@ def read_lammps_dump_text(fileobj, index=-1, **kwargs):
             n_atoms = 0
             line = lines.popleft()
             # !TODO: pyflakes complains about this line -> do something
-            # ntimestep = int(line.split()[0])  # NOQA
+            ntimestep = int(line.split()[0])  # NOQA
 
         if "ITEM: NUMBER OF ATOMS" in line:
             line = lines.popleft()
@@ -265,6 +265,7 @@ def read_lammps_dump_text(fileobj, index=-1, **kwargs):
                 pbc=pbc,
                 **kwargs
             )
+            out_atoms.info['Time'] = ntimestep
             images.append(out_atoms)
 
         if len(images) > index_end >= 0:
@@ -344,6 +345,8 @@ def write_lammps_data(fd, atoms, specorder=None, force_skew=False,
     else:
         p = prismobj
 
+    fd.write("\n")
+
     # Get cell parameters and convert from ASE units to LAMMPS units
     xhi, yhi, zhi, xy, xz, yz = convert(p.get_lammps_prism(), "distance",
                                         "ASE", units)
@@ -358,14 +361,14 @@ def write_lammps_data(fd, atoms, specorder=None, force_skew=False,
                 xy, xz, yz
             )
         )
-    fd.write("\n\n")
+    fd.write("\n")
 
     #added by myself
     fd.write("Masses\n\n")
     for i in range(n_atom_types):
         m = ase.data.atomic_masses[ase.data.chemical_symbols.index(species[i])]
         fd.write("{0:>3} {1:23.17g}\n".format(i+1, m))
-    fd.write("\n\n")
+    fd.write("\n")
 
     # Write (unwrapped) atomic positions.  If wrapping of atoms back into the
     # cell along periodic directions is desired, this should be done manually
@@ -435,7 +438,7 @@ def write_lammps_data(fd, atoms, specorder=None, force_skew=False,
         raise NotImplementedError
 
     if velocities and atoms.get_velocities() is not None:
-        fd.write("\n\nVelocities \n\n")
+        fd.write("\nVelocities \n\n")
         vel = p.vector_to_lammps(atoms.get_velocities())
         for i, v in enumerate(vel):
             # Convert velocity from ASE units to LAMMPS units

@@ -113,9 +113,10 @@ def find_voids(at):
     del at_w_interst[list(del_list)]
     return at_w_interst
 
-def find_voids_grid(db, dx=1.0, xmin=1.0, prog=False):
+def find_voids_grid(db, dx=2.0, xminfct=2.0, prog=False):
     db_grid = []
     iter = 0
+    pts = []
     for at in db:
         if prog:
             iter += 1
@@ -132,11 +133,13 @@ def find_voids_grid(db, dx=1.0, xmin=1.0, prog=False):
         at_wgrid.extend(Atoms('X{}'.format(len(grid)), positions=grid))
         dst = at_wgrid.get_all_distances(mic=True)
         dst = dst[Na:,:Na]
-        ids = np.where(np.any(dst<=xmin, axis=1))[0]
+        xmin = (3*at.get_volume()/at.get_global_number_of_atoms()/4/np.pi)**(1/3)
+        ids = np.where(np.any(dst<=xmin*xminfct, axis=1))[0]
         ids += Na
         del at_wgrid[list(ids)]
         db_grid.append(at_wgrid)
-    return db_grid
+        pts.append(len(grid)-len(ids))
+    return db_grid, pts
 
 def track_initial_bonds(db, fct=1, prog=False):
     cutOff = neighborlist.natural_cutoffs(db[0], mult=fct)
@@ -151,3 +154,22 @@ def track_initial_bonds(db, fct=1, prog=False):
             print(iter)
         dists = np.hstack([dists, at.get_all_distances(mic=True)[conMat==True].reshape(-1,1)])
     return dists
+
+def track_distrib_grid(db, N=2, prog=False):
+    masses = []
+    numbers = []
+    densities = []
+    iter = 0
+    for at in db:
+        if prog:
+            iter += 1
+            print(iter)
+        frac = at.get_scaled_positions(wrap=True)
+        m = at.get_masses()
+        idx = np.sum(np.floor(frac*N)*np.array([N**2,N**1,N**0]),axis=1).astype(int)
+        masses.append([np.sum(m[idx==i]) for i in range(N**3)])
+        numbers.append([sum(idx==i) for i in range(N**3)])
+        densities.append([np.sum(m[idx==i])*(N**3)*10/6.022/at.get_volume() for i in range(N**3)])
+    masses = np.array(masses)
+    numbers = np.array(numbers)
+    return np.array(densities), masses/np.mean(masses, axis=1).reshape(-1,1), numbers/np.mean(numbers, axis=1).reshape(-1,1)
