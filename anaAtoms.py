@@ -6,6 +6,15 @@ import numpy as np
 import extAtoms as ea
 import scipy.spatial
 
+#returns molecular name based on formula
+def mol_chem_name(formula):
+    if formula=='C3H4O3':
+        return 'EC'
+    elif formula=='C4H8O3':
+        return 'EMC'
+    else:
+        return None
+
 #computes molID for single config, not adding molID to atoms.arrays
 def find_molec(at, fct=1.0):
     #from https://wiki.fysik.dtu.dk/ase/ase/neighborlist.html
@@ -46,11 +55,13 @@ def wrap_molec(mol, fct=1.0, full=False):
             visited.append(i)
     m = mol.get_masses()
     cm = np.sum(mol.positions*m.reshape(-1,1), axis=0)/np.sum(m)
-    wrap_cm = ase.geometry.wrap_positions(positions=[cm], cell=mol.cell, pbc=mol.pbc)
+    wrap_cm = ase.geometry.wrap_positions(positions=[cm], cell=mol.cell, pbc=mol.pbc)[0]
     mol.positions += (wrap_cm-cm)
+    return wrap_cm
 
 #wraps all molecules over a list of configurations
-def wrap_molecs(db, fct=1.0, full=False, prog=False):
+def wrap_molecs(db, fct=1.0, full=False, prog=False, returnMols=False):
+    moldb = []
     iter = 0
     for at in db:
         if prog:
@@ -59,11 +70,20 @@ def wrap_molecs(db, fct=1.0, full=False, prog=False):
         if 'molID' not in at.arrays.keys():
             find_molecs([at], fct)
         molID = at.arrays['molID']
+        molCM = []
+        molSym = []
         for m in np.unique(molID):
             mol = at[molID==m] #copy by value
-            wrap_molec(mol, fct, full)
+            cm = wrap_molec(mol, fct, full)
             #at[molID==m].positions = mol.positions #does not work at[molID==m] is not a ref
             at.positions[molID==m,:] = mol.positions
+            molCM.append(cm)
+            molSym.append(mol_chem_name(mol.symbols.get_chemical_formula()))
+        newmol = Atoms(positions=np.array(molCM), pbc=True, cell=at.cell)
+        newmol.arrays['molSym'] = np.array(molSym)
+        moldb.append(newmol)
+    if returnMols:
+        return moldb
 
 #splits condensed phase into separate molecules
 def split_molecs(db):
@@ -173,3 +193,40 @@ def track_distrib_grid(db, N=2, prog=False):
     masses = np.array(masses)
     numbers = np.array(numbers)
     return np.array(densities), masses/np.mean(masses, axis=1).reshape(-1,1), numbers/np.mean(numbers, axis=1).reshape(-1,1)
+
+def mol_env(at, Rcut=6.0):
+    Nmol = len(at)
+    molSym = at.arrays['molSym']
+    molEnv = dict()
+    lbs = list(np.unique(molSym))
+    for lb in lbs:
+        molEnv[lb] = []
+    nbLst = neighborlist.NeighborList([Rcut/2]*len(at), self_interaction=False, bothways=True)
+    nbLst.update(at)
+    S = nbLst.get_connectivity_matrix(sparse=False)
+    for i in range(Nmol):
+        counts = np.unique(molSym[S[i,:]==1], return_counts=True)
+        buf = []
+        for lb in lbs:
+            if lb in counts[0]:
+                buf.append(counts[1][list(counts[0]).index(lb)])
+            else:
+                buf.append(0)
+        molEnv[molSym[i]].append(np.array(buf))
+    for lb in lbs:
+        #molEnv[lb] = np.concatenate(molEnv[lb]) - will not work, creates a 1D array
+        molEnv[lb] = np.array(molEnv[lb])
+    return molEnv
+
+def mol_envs(moldb, Rcut=6.0):
+    menvs = mol_env(moldb[0], Rcut)
+    for at in moldb[1:]:
+        menv = mol_env(at, Rcut)
+        for lb in menv.keys():
+            #lb must be in menvs, otherwise this will not work, as intended
+            #it is allowed for later configs to have different compositions
+            #but of the same components as defined by the first config
+            #note that in that case, the config id will not be consistend across environments
+            #and only the overall statistics is meaningful
+            menvs[lb] = np.vstack([menvs[lb], menv[lb]])
+    return menvs

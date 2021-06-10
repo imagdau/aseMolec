@@ -769,12 +769,15 @@ def read_lammps_data(fileobj, Z_of_type=None, style="full",
         ids[ind] = id
         # by type
         types[ind] = type
-        if Z_of_type is None:
-            numbers[ind] = type
-        else:
-            numbers[ind] = Z_of_type[type]
         if masses is not None:
             masses[ind] = mass_in[type]
+        if Z_of_type is None:
+            if masses is not None:
+                numbers[ind] = np.argmin(np.abs(ase.data.atomic_masses-masses[ind]))
+            else:
+                numbers[ind] = type
+        else:
+            numbers[ind] = Z_of_type[type]
     # convert units
     positions = convert(positions, "distance", units, "ASE")
     cell = convert(cell, "distance", units, "ASE")
