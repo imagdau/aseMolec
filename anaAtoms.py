@@ -218,15 +218,26 @@ def mol_env(at, Rcut=6.0):
         molEnv[lb] = np.array(molEnv[lb])
     return molEnv
 
-def mol_envs(moldb, Rcut=6.0):
-    menvs = mol_env(moldb[0], Rcut)
-    for at in moldb[1:]:
+def sublist(subls, totls):
+    idx = []
+    for l in subls:
+        if l in totls:
+            idx.append(totls.index(l))
+        else:
+            return False, None
+    return True, idx
+
+def mol_envs(moldb, lbs, Rcut=6.0):
+    menvs = dict()
+    for lb in lbs:
+        menvs[lb] = np.empty(shape=[0,2]).astype(int)
+    for at in moldb:
         menv = mol_env(at, Rcut)
-        for lb in menv.keys():
-            #lb must be in menvs, otherwise this will not work, as intended
-            #it is allowed for later configs to have different compositions
-            #but of the same components as defined by the first config
-            #note that in that case, the config id will not be consistend across environments
-            #and only the overall statistics is meaningful
-            menvs[lb] = np.vstack([menvs[lb], menv[lb]])
+        nlbs = list(menv.keys())
+        is_sublist, mask = sublist(nlbs, lbs)
+        if is_sublist:
+            for lb in nlbs:
+                buf = np.zeros([menv[lb].shape[0], len(lbs)]).astype(int)
+                buf[:,mask] = menv[lb] #if less molecules, e.g. only EMC, fill out rest with zero
+                menvs[lb] = np.vstack([menvs[lb], buf])
     return menvs

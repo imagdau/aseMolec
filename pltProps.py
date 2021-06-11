@@ -83,7 +83,7 @@ def plot_hist(fnames, **kwargs):
             sel = kwargs['sel']
             if (i+1) in sel.keys():
                 counts = np.histogram(thermo[start:,col], bins=b)
-                ids = np.argmin(np.abs(counts[1].reshape(-1,1)-thermo[sel[i+1],col]), axis=0)
+                ids = np.argmin(np.abs(counts[1][:-1].reshape(-1,1)-thermo[sel[i+1],col]), axis=0)
                 plt.scatter(counts[1][ids], counts[0][ids], marker='o', color='C{}'.format(i), s=50)
         i += 1
     if 'title' in kwargs.keys():
@@ -94,7 +94,10 @@ def plot_hist(fnames, **kwargs):
     plt.legend()
 
 def plot_menvs(menvs, lb, **kwargs):
-    nbins = np.max(menvs[lb])
+    if 'nbins' in kwargs.keys():
+        nbins = kwargs['nbins']
+    else:
+        nbins = np.max(menvs[lb])
     bins = np.vstack([np.array(range(nbins+1))]*menvs[lb].shape[1])
     counts, coords = np.histogramdd(menvs[lb], bins=bins)
     #later could expend to more dimensions, for now just implement for 2
@@ -103,7 +106,7 @@ def plot_menvs(menvs, lb, **kwargs):
         cmap = kwargs['cmap']
     else:
         cmap = 'viridis'
-    plt.pcolormesh(coords[1]-0.5, coords[0]-0.5, counts, cmap=cmap, edgecolors='grey')
+    plt.pcolormesh(coords[0]-0.5, coords[1]-0.5, counts.T, cmap=cmap, edgecolors='grey')
     plt.xticks(coords[0][:-1])
     plt.yticks(coords[1][:-1])
     if 'style' in kwargs.keys():
@@ -112,7 +115,7 @@ def plot_menvs(menvs, lb, **kwargs):
         if kwargs['style']=='nums':
             for i in range(nbins):
                 for j in range(nbins):
-                    plt.text(j,i,'{0:d}'.format(int(counts[i, j])), ha='center', va='center')
+                    plt.text(i,j,'{0:d}'.format(int(counts[i, j])), ha='center', va='center')
     if 'labs' in kwargs.keys():
         plt.xlabel(kwargs['labs'][0])
         plt.ylabel(kwargs['labs'][1])
