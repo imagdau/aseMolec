@@ -37,6 +37,39 @@ def find_molecs(db, fct=1.0):
         Nmol, molID = sparse.csgraph.connected_components(conMat)
         at.arrays['molID'] = molID
 
+#computes number of neighbours
+def find_num_nb(db, Rcut=6.0):
+    NumNbs = []
+    for at in db:
+        nbLst = neighborlist.NeighborList([Rcut/2.0]*len(at), self_interaction=False, bothways=True)
+        nbLst.update(at)
+        conMat = nbLst.get_connectivity_matrix(sparse=False)
+        NumNbs += list(np.sum(conMat, axis=0))
+    return np.array(NumNbs)
+
+#extracts molecules CM into a new trajectory without changing any coordinates
+#designed mainly for extracting diffusion coefficients, assumes no wrapping
+#assumes molIDs exist and molecules are full
+#this is a bit redundant with wrap_molecs, maybe could be combined in the future
+def extract_molecs(db):
+    moldb = []
+    for at in db:
+        if 'molID' not in at.arrays.keys():
+            find_molecs([at], fct=1)
+        molID = at.arrays['molID']
+        molCM = []
+        molSym = []
+        for m in np.unique(molID):
+            mol = at[molID==m] #copy by value
+            mass = mol.get_masses()
+            cm = np.sum(mol.positions*mass.reshape(-1,1), axis=0)/np.sum(mass)
+            molCM.append(cm)
+            molSym.append(mol_chem_name(mol.symbols.get_chemical_formula()))
+        newmol = Atoms(positions=np.array(molCM), pbc=True, cell=at.cell)
+        newmol.arrays['molSym'] = np.array(molSym)
+        moldb.append(newmol)
+    return moldb
+
 #wraps single molecule: completes molecule over pbc and sfits COM back to unit cell
 def wrap_molec(mol, fct=1.0, full=False):
     if not full:
@@ -86,25 +119,50 @@ def wrap_molecs(db, fct=1.0, full=False, prog=False, returnMols=False):
         return moldb
 
 #splits condensed phase into separate molecules
-def split_molecs(db):
+def split_molecs(db, scale=1.0):
     smdb = []
     for at in db:
         molID = at.arrays['molID']
         for m in np.unique(molID):
             smdb += [at[molID==m]] #copy by value
+    for at in smdb:
+        at.cell *= scale
     return smdb
 
 #collects intra- and inter- molecular contributions
-def collect_molec_results(db, smdb, fext):
+def collect_molec_results(db, smdb, fext='', dryrun=False):
     for at in db:
         sel = ea.sel_by_uid(smdb, at.info['uid']) #assumes molecules are in the original condensed phase order
-        print(np.sum(np.abs(at.positions - np.concatenate(ea.get_prop(sel,'arrays','positions'))))) #check if that was true
-        at.info['energy'+fext+'_intram'] = sum(ea.get_prop(sel, 'info', 'energy'+fext))
-        at.info['virial'+fext+'_intram'] = sum(ea.get_prop(sel, 'info', 'virial'+fext))
-        at.arrays['forces'+fext+'_intram'] = np.concatenate(ea.get_prop(sel, 'arrays', 'forces'+fext))
-        at.info['energy'+fext+'_interm'] = at.info['energy'+fext]-at.info['energy'+fext+'_intram']
-        at.info['virial'+fext+'_interm'] = at.info['virial'+fext]-at.info['virial'+fext+'_intram']
-        at.arrays['forces'+fext+'_interm'] = at.arrays['forces'+fext]-at.arrays['forces'+fext+'_intram']
+        if dryrun:
+            print(np.sum(np.abs(at.positions - np.concatenate(ea.get_prop(sel,'arrays','positions'))))) #check if that was true
+        else:
+            at.info['energy'+fext+'_intram_mol'] = ea.get_prop(sel, 'info', 'energy'+fext)
+            at.info['energy'+fext+'_intram'] = sum(ea.get_prop(sel, 'info', 'energy'+fext))
+            at.info['virial'+fext+'_intram'] = sum(ea.get_prop(sel, 'info', 'virial'+fext))
+            at.arrays['forces'+fext+'_intram'] = np.concatenate(ea.get_prop(sel, 'arrays', 'forces'+fext)).astype(float)
+            at.info['energy'+fext+'_interm'] = at.info['energy'+fext]-at.info['energy'+fext+'_intram']
+            at.info['virial'+fext+'_interm'] = at.info['virial'+fext]-at.info['virial'+fext+'_intram']
+            at.arrays['forces'+fext+'_interm'] = at.arrays['forces'+fext]-at.arrays['forces'+fext+'_intram']
+
+#starting from one configuration, adjusts the volume according to vol_fracs
+def scan_vol(at, vol_fracs, frozen=True):
+    db = []
+    lat_fracs = vol_fracs**(1.0/3.0)
+    mol = wrap_molecs([at], fct=1, full=False, prog=False, returnMols=True)[0]
+    molID = at.arrays['molID']
+    for f in lat_fracs:
+        mol_disps = mol.positions*(f-1)
+        nat = at.copy()
+        nat.cell *= f
+        id = 0
+        if frozen:
+            for m in np.unique(molID):
+                nat.positions[molID==m,:] += mol_disps[id,:]
+                id += 1
+        else:
+            nat.positions *= f
+        db.append(nat)
+    return db
 
 #find voids: copied from https://github.com/gabor1/workflow/blob/main/wfl/utils/find_voids.py
 def find_voids(at):

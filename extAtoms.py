@@ -67,13 +67,45 @@ def del_prop_by_tag(db, tag):
             if tag in k:
                 del at.arrays[k]
 
+#renames prop tag, eg: energy_PBE -> energy_dft
+def rename_prop_tag(db, oldtag, newtag):
+    for at in db:
+        keys = list(at.info.keys())
+        for k in keys:
+            if oldtag in k:
+                at.info[k.replace(oldtag, newtag)] = at.info.pop(k)
+        keys = list(at.arrays.keys())
+        for k in keys:
+            if oldtag in k:
+                at.arrays[k.replace(oldtag, newtag)] = at.arrays.pop(k)
+
 #returns desired property for list of Atoms
-def get_prop(db, type, prop=''):
+def get_prop(db, type, prop='', peratom=False):
+    if peratom:
+        N = lambda a : a.get_global_number_of_atoms()
+    else:
+        N = lambda a : 1
     if type == 'info':
-        return np.array(list(map(lambda a : a.info[prop], db)))
+        return np.array(list(map(lambda a : a.info[prop]/N(a), db)))
     if type == 'arrays':
-        return np.array(list(map(lambda a : a.arrays[prop], db)), dtype=object)
+        return np.array(list(map(lambda a : a.arrays[prop]/N(a), db)), dtype=object)
     if type == 'cell':
-        return np.array(list(map(lambda a : a.cell, db)))
+        return np.array(list(map(lambda a : a.cell/N(a), db)))
     if type == 'meth':
-        return np.array(list(map(lambda a : getattr(a, prop)(), db)))
+        return np.array(list(map(lambda a : getattr(a, prop)()/N(a), db)))
+
+def set_prop(db, type, prop, tag):
+    for i,at in enumerate(db):
+        if type == 'info':
+            at.info[tag] = prop[i]
+        if type == 'arrays':
+            at.arrays[tag] = prop[i]
+
+def calc_virial(db, tag='', keep=False, convstr=False):
+    for at in db:
+        if keep:
+            at.info['virial'+tag] = -at.info['stress'+tag]*at.get_volume()
+        else:
+            at.info['virial'+tag] = -at.info.pop('stress'+tag)*at.get_volume()
+        if convstr:
+            at.info['virial'+tag] = ' '.join(map(str, at.info.pop('virial'+tag).reshape(-1,order='F')))

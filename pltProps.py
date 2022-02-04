@@ -21,6 +21,7 @@ def plot_prop(prop1, prop2, **kwargs):
     plt.legend()
     plt.gca().set_aspect('equal', adjustable='box')
     plt.gca().ticklabel_format(useOffset=False)
+    return RMSE
 
 # col, Navg, legend, labs, title
 def plot_traj(fnames, **kwargs):

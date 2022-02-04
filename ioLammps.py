@@ -396,6 +396,17 @@ def write_lammps_data(fd, atoms, specorder=None, force_skew=False,
             s = species.index(symbols[i]) + 1
             fd.write("{0:>6} {1:>3} {2:>5} {3:23.17g} {4:23.17g} {5:23.17g}\n"
                     .format(*(i + 1, s, q) + tuple(r)))
+    elif atom_style == 'dipole':
+        charges = atoms.get_initial_charges()
+        dipoles = atoms.arrays['initial_dipoles']
+        for i, (q, mu, r) in enumerate(zip(charges, dipoles, pos)):
+            # Convert position and charge from ASE units to LAMMPS units
+            r = convert(r, "distance", "ASE", units)
+            q = convert(q, "charge", "ASE", units)
+            # mu = convert(...) not implemented yet!
+            s = species.index(symbols[i]) + 1
+            fd.write("{0:>6} {1:>3} {2:>7} {3:>7} {4:>7} {5:>7} {6:23.17g} {7:23.17g} {8:23.17g}\n"
+                    .format(*(i + 1, s, q) + tuple(mu) + tuple(r)))
     elif atom_style == 'full':
         charges = atoms.get_initial_charges()
         # The label 'mol-id' has apparenlty been introduced in read earlier,
