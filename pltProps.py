@@ -1,6 +1,21 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+# ### Standard Error of the Mean
+# a = np.random.normal(size=100000)
+# N = 10
+# win = int(100000/N)
+# m = np.mean(a.reshape([N,win]), axis=1)
+# print(m.size)
+# print(np.std(m))
+# print(np.std(m)*np.sqrt(win))
+# print(np.std(a))
+def stats(v, win=1):
+    N = np.floor(v.size/win).astype(int)
+    v_win = v[:N*win].reshape(N,win)
+    means = np.mean(v_win, axis=1)
+    return np.mean(means), np.std(means), np.around((N*win*100)/v.size, 2)
+
 def plot_prop(prop1, prop2, **kwargs):
     lmin = min(min(prop1), min(prop2))
     lmax = max(max(prop1), max(prop2))
@@ -34,6 +49,10 @@ def plot_traj(fnames, **kwargs):
         N = kwargs['Navg']
     else:
         N = 1
+    if 'Nsamp' in kwargs.keys():
+        Nsamp = kwargs['Nsamp']
+    else:
+        Nsamp = 1000
     for f in fnames:
         thermo = np.loadtxt(f)
         y = np.convolve(thermo[:,col], np.ones(N)/N, mode='valid')
@@ -45,21 +64,24 @@ def plot_traj(fnames, **kwargs):
             lb = kwargs['legend'][i]
         else:
             lb = None
-        plt.plot(thermo[ymin:ymax,0]/1000, y, label=lb)
+        plt.plot(thermo[ymin:ymax,0]/Nsamp, y, label=lb)
         if 'sel' in kwargs.keys():
             sel = kwargs['sel']
             if (i+1) in sel.keys():
-                plt.scatter(thermo[sel[i+1],0]/1000, y[np.array(sel[i+1])-ymin], marker='o', color='C{}'.format(i), s=50)
+                plt.scatter(thermo[sel[i+1],0]/Nsamp, y[np.array(sel[i+1])-ymin], marker='o', color='C{}'.format(i), s=50)
         i += 1
     if 'title' in kwargs.keys():
         plt.title(kwargs['title'])
     if 'labs' in kwargs.keys():
         plt.xlabel(kwargs['labs'][0])
         plt.ylabel(kwargs['labs'][1])
-    plt.legend()
+    if lb:
+        plt.legend()
 
 # col, start, bins, legend, labs, title
 def plot_hist(fnames, **kwargs):
+    avgs = []
+    stds = []
     i = 0
     if 'col' in kwargs.keys():
         col = kwargs['col']
@@ -73,13 +95,34 @@ def plot_hist(fnames, **kwargs):
         start = kwargs['start']
     else:
         start = 0
+    if 'orient' in kwargs.keys():
+        orientation=kwargs['orient']
+    else:
+        orientation='vertical'
+    if 'htype' in kwargs.keys():
+        htype = kwargs['htype']
+    else:
+        htype = 'step'
+    if 'Navg' in kwargs.keys():
+        Navg = kwargs['Navg']
+    else:
+        Navg = 1
     for f in fnames:
         thermo = np.loadtxt(f)
         if 'legend' in kwargs.keys():
             lb = kwargs['legend'][i]
         else:
             lb = None
-        plt.hist(thermo[start:,col], bins=b, histtype='step', label=lb)
+        result = plt.hist(thermo[start:,col], bins=b, histtype=htype, label=lb, orientation=orientation, alpha=0.7)
+        centers = result[1][:-1]+np.diff(result[1])/2
+        counts = result[0]
+        # avg = np.sum(centers*counts)/np.sum(counts)
+        # std = np.sqrt(np.sum(((centers-avg)**2)*counts)/np.sum(counts))
+        # avg = np.mean(thermo[start:,col])
+        # std = np.std(thermo[start:,col])
+        avg, std, _ = stats(thermo[start:,col], Navg)
+        avgs += [avg]
+        stds += [std]
         if 'sel' in kwargs.keys():
             sel = kwargs['sel']
             if (i+1) in sel.keys():
@@ -92,7 +135,9 @@ def plot_hist(fnames, **kwargs):
     if 'labs' in kwargs.keys():
         plt.xlabel(kwargs['labs'][0])
         plt.ylabel(kwargs['labs'][1])
-    plt.legend()
+    if lb:
+        plt.legend()
+    return np.array(avgs), np.array(stds)
 
 def plot_menvs(menvs, lb, **kwargs):
     if 'nbins' in kwargs.keys():

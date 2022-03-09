@@ -6,19 +6,33 @@ import numpy as np
 import extAtoms as ea
 import scipy.spatial
 
+#extends fct to dictionary if needed
+def modif_natural_cutoffs(at, fct):
+    if type(fct) is int or type(fct) is float:
+        return neighborlist.natural_cutoffs(at, mult=fct)
+    elif type(fct) is dict:
+        cutOff = neighborlist.natural_cutoffs(at, mult=1)
+        return [ctf*fct[el] for ctf, el in zip(cutOff, at.get_chemical_symbols())]
+    else:
+        raise NameError('Unknown fct type '+str(type(fct)))
+
 #returns molecular name based on formula
 def mol_chem_name(formula):
     if formula=='C3H4O3':
         return 'EC'
     elif formula=='C4H8O3':
         return 'EMC'
+    elif formula=='Li':
+        return 'Li'
+    elif formula=='F6P':
+        return 'PF6'
     else:
-        return None
+        raise NameError('Unknown formula "'+formula+'"')
 
 #computes molID for single config, not adding molID to atoms.arrays
 def find_molec(at, fct=1.0):
     #from https://wiki.fysik.dtu.dk/ase/ase/neighborlist.html
-    cutOff = neighborlist.natural_cutoffs(at, mult=fct)
+    cutOff = modif_natural_cutoffs(at, fct)
     nbLst = neighborlist.NeighborList(cutOff, self_interaction=False, bothways=True)
     nbLst.update(at)
     conMat = nbLst.get_connectivity_matrix(sparse=True)
@@ -30,7 +44,7 @@ def find_molec(at, fct=1.0):
 def find_molecs(db, fct=1.0):
     for at in db:
         #from https://wiki.fysik.dtu.dk/ase/ase/neighborlist.html
-        cutOff = neighborlist.natural_cutoffs(at, mult=fct)
+        cutOff = modif_natural_cutoffs(at, fct)
         nbLst = neighborlist.NeighborList(cutOff, self_interaction=False, bothways=True)
         nbLst.update(at)
         conMat = nbLst.get_connectivity_matrix(sparse=True)
@@ -73,7 +87,7 @@ def extract_molecs(db):
 #wraps single molecule: completes molecule over pbc and sfits COM back to unit cell
 def wrap_molec(mol, fct=1.0, full=False):
     if not full:
-        cutOff = neighborlist.natural_cutoffs(mol, mult=fct)
+        cutOff = modif_natural_cutoffs(mol, fct)
         nbLst = neighborlist.NeighborList(cutOff, self_interaction=False, bothways=True)
         visited = []
         tovisit = [0]
@@ -220,7 +234,7 @@ def find_voids_grid(db, dx=2.0, xminfct=2.0, prog=False):
     return db_grid, pts
 
 def track_initial_bonds(db, fct=1, prog=False):
-    cutOff = neighborlist.natural_cutoffs(db[0], mult=fct)
+    cutOff = modif_natural_cutoffs(db[0], fct)
     nbLst = neighborlist.NeighborList(cutOff, self_interaction=False, bothways=False)
     nbLst.update(db[0])
     conMat = nbLst.get_connectivity_matrix(sparse=False)

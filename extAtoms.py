@@ -79,6 +79,13 @@ def rename_prop_tag(db, oldtag, newtag):
             if oldtag in k:
                 at.arrays[k.replace(oldtag, newtag)] = at.arrays.pop(k)
 
+def get_E0(db, tag=''):
+    E0 = {}
+    for at in db:
+        if len(at)==1:
+            E0[at.get_chemical_symbols()[0]]=at.info['energy'+tag]
+    return E0
+
 #returns desired property for list of Atoms
 def get_prop(db, type, prop='', peratom=False):
     if peratom:
@@ -93,6 +100,9 @@ def get_prop(db, type, prop='', peratom=False):
         return np.array(list(map(lambda a : a.cell/N(a), db)))
     if type == 'meth':
         return np.array(list(map(lambda a : getattr(a, prop)()/N(a), db)))
+    if type == 'bind':
+        E0 = get_E0(db, prop)
+        return np.array(list(map(lambda a : (a.info['energy'+prop]-np.sum([E0[s] for s in a.get_chemical_symbols()]))/N(a), db)))
 
 def set_prop(db, type, prop, tag):
     for i,at in enumerate(db):
