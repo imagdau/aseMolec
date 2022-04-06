@@ -76,11 +76,11 @@ def find_num_nb(db, Rcut=6.0):
 #designed mainly for extracting diffusion coefficients, assumes no wrapping
 #assumes molIDs exist and molecules are full
 #this is a bit redundant with wrap_molecs, maybe could be combined in the future
-def extract_molecs(db):
+def extract_molecs(db, fct=1):
     moldb = []
     for at in db:
         if 'molID' not in at.arrays.keys():
-            find_molecs([at], fct=1)
+            find_molecs([at], fct=fct)
         molID = at.arrays['molID']
         molCM = []
         molSym = []
