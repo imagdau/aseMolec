@@ -187,7 +187,7 @@ def get_max_index(index):
         return index.stop if (index.stop is not None) else float("inf")
 
 
-def read_lammps_dump_text(fileobj, index=-1, **kwargs):
+def read_lammps_dump_text(fileobj, index=-1, prt=False, **kwargs):
     """Process cleartext lammps dumpfiles
 
     :param fileobj: filestream providing the trajectory data
@@ -211,6 +211,8 @@ def read_lammps_dump_text(fileobj, index=-1, **kwargs):
             line = lines.popleft()
             # !TODO: pyflakes complains about this line -> do something
             ntimestep = int(line.split()[0])  # NOQA
+            if prt:
+                print(ntimestep)
 
         if "ITEM: NUMBER OF ATOMS" in line:
             line = lines.popleft()

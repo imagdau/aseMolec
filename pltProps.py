@@ -107,13 +107,17 @@ def plot_hist(fnames, **kwargs):
         Navg = kwargs['Navg']
     else:
         Navg = 1
+    if 'density' in kwargs.keys():
+        density = kwargs['density']
+    else:
+        density = False
     for f in fnames:
         thermo = np.loadtxt(f)
         if 'legend' in kwargs.keys():
             lb = kwargs['legend'][i]
         else:
             lb = None
-        result = plt.hist(thermo[start:,col], bins=b, histtype=htype, label=lb, orientation=orientation, alpha=0.7)
+        result = plt.hist(thermo[start:,col], bins=b, histtype=htype, label=lb, orientation=orientation, alpha=0.7, density=density)
         centers = result[1][:-1]+np.diff(result[1])/2
         counts = result[0]
         # avg = np.sum(centers*counts)/np.sum(counts)

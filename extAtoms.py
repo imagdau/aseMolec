@@ -48,10 +48,14 @@ def del_prop(db):
         for k in keys:
             if 'energy' in k:
                 del at.info[k]
+            if 'stress' in k:
+                del at.info[k]
             if 'virial' in k:
                 del at.info[k]
         keys = list(at.arrays.keys())
         for k in keys:
+            if 'momenta' in k:
+                del at.arrays[k]
             if 'force' in k:
                 del at.arrays[k]
 
