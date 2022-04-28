@@ -196,32 +196,12 @@ def collect_molec_results(db, smdb, fext='', dryrun=False):
             at.info['virial'+fext+'_interm'] = at.info['virial'+fext]-at.info['virial'+fext+'_intram']
             at.arrays['forces'+fext+'_interm'] = at.arrays['forces'+fext]-at.arrays['forces'+fext+'_intram']
 
-#WORK IN PROGRESS
-# def collect_molec_results_dict(db, smdb, fext=''):
-#     for at in db:
-#         sm = []
-#         uid = at.info['uid']
-#         for molSym in smdb:
-#             sm += ea.sel_by_uid(smdb[molSym], uid)
-#         idx = np.argsort(ea.get_prop(sm, 'info', 'mID'))
-#         sel = [sm[i] for i in idx]
-#         coords = at.positions - np.concatenate(ea.get_prop(sel,'arrays','positions')).astype(float)
-#         molIDtry = np.unique(np.round(coords,1), axis=0, return_inverse=True)[1]
-#         molID = [0]
-#         for i in range(molIDtry.size-1):
-#             if molIDtry[i]!=molIDtry[i+1]:
-#                 molID += [molID[-1]+1]
-#             else:
-#                 molID += [molID[-1]]
-#         check = np.sum(np.concatenate(ea.get_prop(sm, 'arrays', 'molID')).astype(int)-molID)
-#         print(check)
+#collects molecules without assuming any order, but expects mID in info
 def collect_molec_results_dict(db, smdb, fext='', dryrun=False):
     for at in db:
         del at.calc
-        sm = []
         uid = at.info['uid']
-        for molSym in smdb:
-            sm += ea.sel_by_uid(smdb[molSym], uid)
+        sm = ea.sel_by_uid(smdb, uid)
         idx = np.argsort(ea.get_prop(sm, 'info', 'mID'))
         sel = [sm[i] for i in idx]
         #check positions differ only up to a translation

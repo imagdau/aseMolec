@@ -114,6 +114,10 @@ def get_prop(db, type, prop='', peratom=False, E0={}):
         return np.array(list(map(lambda a : a.cell/N(a), db)))
     if type == 'meth':
         return np.array(list(map(lambda a : getattr(a, prop)()/N(a), db)))
+    if type == 'atom':
+        if not E0:
+            E0 = get_E0(db, prop)
+        return np.array(list(map(lambda a : (np.sum([E0[s] for s in a.get_chemical_symbols()]))/N(a), db)))
     if type == 'bind':
         if not E0:
             E0 = get_E0(db, prop)
@@ -134,7 +138,6 @@ def calc_virial(db, tag='', keep=False, convstr=False):
             at.info['virial'+tag] = -at.info.pop('stress'+tag)*at.get_volume()
         if convstr:
             at.info['virial'+tag] = ' '.join(map(str, at.info.pop('virial'+tag).reshape(-1,order='F')))
-
 
 def split_db(db, N=150, seed=12345):
     db_ia = sel_by_conf_type(db, 'IsolatedAtoms')

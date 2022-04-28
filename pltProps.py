@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
+import extAtoms as ea
 
 # ### Standard Error of the Mean
 # a = np.random.normal(size=100000)
@@ -188,3 +189,99 @@ def plot_menvs(menvs, lb, **kwargs):
         plt.ylabel(kwargs['labs'][1])
     if 'title' in kwargs.keys():
         plt.title(kwargs['title'])
+
+def plot_intra_inter_energy(db_test, db_pred):
+    E0_test = ea.get_E0(db_test)
+    E0_pred = ea.get_E0(db_pred)
+    db_test = ea.sel_by_conf_type(db_test, 'LiquidConfigs')
+    db_pred = ea.sel_by_conf_type(db_pred, 'LiquidConfigs')
+
+    RMSE = {}
+    plt.rcParams.update({'font.size': 12})
+    plt.figure(figsize=(8,8), dpi=200)
+    plt.subplot(2,2,1)
+    RMSE['IntraEnergy'] = plot_prop(ea.get_prop(db_test, 'bind', '_intram', True, E0_test).flatten(), \
+                                    ea.get_prop(db_pred, 'bind', '_intram', True, E0_pred).flatten(), \
+                                    title='Intra Energy (ev/atom) ', labs=['DFT', 'GAP'])
+    plt.subplot(2,2,2)
+    RMSE['InterEnergy'] = plot_prop(ea.get_prop(db_test, 'info', 'energy_interm', True).flatten(), \
+                                    ea.get_prop(db_pred, 'info', 'energy_interm', True).flatten(), \
+                                    title='Inter Energy (ev/atom) ', labs=['DFT', 'GAP'])
+    plt.subplot(2,2,3)
+    # RMSE['AtomEnergy'] = plot_prop(np.array([E0_test[k] for k in E0_test]), \
+    #                                np.array([E0_pred[k] for k in E0_pred]), \
+    #                                title='Atomic Energy (ev/atom) ', labs=['DFT', 'GAP'])
+    RMSE['AtomEnergy'] = plot_prop(ea.get_prop(db_test, 'atom', peratom=True, E0=E0_test).flatten(), \
+                                   ea.get_prop(db_pred, 'atom', peratom=True, E0=E0_pred).flatten(), \
+                                   title='Atom Energy (ev/atom) ', labs=['DFT', 'GAP'])
+    plt.subplot(2,2,4)
+    RMSE['TotalEnergy'] = plot_prop(ea.get_prop(db_test, 'info', 'energy', True).flatten(), \
+                                    ea.get_prop(db_pred, 'info', 'energy', True).flatten(), \
+                                    title='Total Energy (ev/atom) ', labs=['DFT', 'GAP'])
+    plt.tight_layout(pad=0.5)
+    plt.savefig('energy.png')
+    plt.close()
+    return RMSE
+
+def plot_intra_inter_forces(db_test, db_pred):
+    db_test = ea.sel_by_conf_type(db_test, 'LiquidConfigs')
+    db_pred = ea.sel_by_conf_type(db_pred, 'LiquidConfigs')
+    elms = np.array([el for at in db_test for el in at.get_chemical_symbols()])
+    Nelms = np.unique(elms).size
+
+    RMSE = {}
+    plt.rcParams.update({'font.size': 12})
+    plt.figure(figsize=((Nelms+1)*4,3*4), dpi=200)
+    for i,el in enumerate(np.unique(elms)):
+        plt.subplot(3,Nelms+1,i+1)
+        RMSE['IntraForces'+el] = plot_prop(np.concatenate(ea.get_prop(db_test, 'arrays', 'forces_intram'))[elms==el,:].flatten(), \
+                                           np.concatenate(ea.get_prop(db_pred, 'arrays', 'forces_intram'))[elms==el,:].flatten(), \
+                                           title=el+'\nIntra Forces (ev/A) ', labs=['DFT', 'GAP'])
+        plt.subplot(3,Nelms+1,(Nelms+1)+i+1)
+        RMSE['InterForces'+el] = plot_prop(np.concatenate(ea.get_prop(db_test, 'arrays', 'forces_interm'))[elms==el,:].flatten(), \
+                                           np.concatenate(ea.get_prop(db_pred, 'arrays', 'forces_interm'))[elms==el,:].flatten(), \
+                                           title='Inter Forces (ev/A) ', labs=['DFT', 'GAP'])
+        plt.subplot(3,Nelms+1,2*(Nelms+1)+i+1)
+        RMSE['TotalForces'+el] = plot_prop(np.concatenate(ea.get_prop(db_test, 'arrays', 'forces'))[elms==el,:].flatten(), \
+                                           np.concatenate(ea.get_prop(db_pred, 'arrays', 'forces'))[elms==el,:].flatten(), \
+                                           title='Total Forces (ev/A) ', labs=['DFT', 'GAP'])
+    plt.subplot(3,Nelms+1,(Nelms+1))
+    RMSE['IntraForces'] = plot_prop(np.concatenate(ea.get_prop(db_test, 'arrays', 'forces_intram')).flatten(), \
+                                    np.concatenate(ea.get_prop(db_pred, 'arrays', 'forces_intram')).flatten(), \
+                                    title='Intra Forces (ev/A) ', labs=['DFT', 'GAP'])
+    plt.subplot(3,Nelms+1,2*(Nelms+1))
+    RMSE['InterForces'] = plot_prop(np.concatenate(ea.get_prop(db_test, 'arrays', 'forces_interm')).flatten(), \
+                                    np.concatenate(ea.get_prop(db_pred, 'arrays', 'forces_interm')).flatten(), \
+                                    title='Inter Forces (ev/A) ', labs=['DFT', 'GAP'])
+    plt.subplot(3,Nelms+1,3*(Nelms+1))
+    RMSE['TotalForces'] = plot_prop(np.concatenate(ea.get_prop(db_test, 'arrays', 'forces')).flatten(), \
+                                    np.concatenate(ea.get_prop(db_pred, 'arrays', 'forces')).flatten(), \
+                                    title='Total Forces (ev/A) ', labs=['DFT', 'GAP'])
+    plt.tight_layout(pad=0.5)
+    plt.savefig('forces.png')
+    plt.close()
+    return RMSE
+
+def plot_intra_inter_virial(db_test, db_pred):
+    db_test = ea.sel_by_conf_type(db_test, 'LiquidConfigs')
+    db_pred = ea.sel_by_conf_type(db_pred, 'LiquidConfigs')
+
+    RMSE = {}
+    plt.rcParams.update({'font.size': 12})
+    plt.figure(figsize=(12,4), dpi=200)
+    plt.subplot(1,3,1)
+    RMSE['IntraVirial'] = plot_prop(ea.get_prop(db_test, 'info', 'virial_intram', True).flatten(), \
+                                    ea.get_prop(db_pred, 'info', 'virial_intram', True).flatten(), \
+                                    title='Intra Virial (ev/atom) ', labs=['DFT', 'GAP'])
+    plt.subplot(1,3,2)
+    RMSE['InterVirial'] = plot_prop(ea.get_prop(db_test, 'info', 'virial_interm', True).flatten(), \
+                                    ea.get_prop(db_pred, 'info', 'virial_interm', True).flatten(), \
+                                    title='Inter Virial (ev/atom) ', labs=['DFT', 'GAP'])
+    plt.subplot(1,3,3)
+    RMSE['TotalVirial'] = plot_prop(ea.get_prop(db_test, 'info', 'virial', True).flatten(), \
+                                    ea.get_prop(db_pred, 'info', 'virial', True).flatten(), \
+                                    title='Total Virial (ev/atom) ', labs=['DFT', 'GAP'])
+    plt.tight_layout(pad=0.5)
+    plt.savefig('virial.png')
+    plt.close()
+    return RMSE
