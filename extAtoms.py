@@ -11,6 +11,16 @@ def hash_atoms(db):
         v = np.concatenate((at.numbers.reshape(-1,1), at.positions),axis=1)
         at.info['uid'] = hash_array(v)
 
+# __eq__(self, other) implemented in atoms.py envokes really high precision
+def equal(self, other, prec=1e-12):
+    a = self.arrays
+    b = other.arrays
+    return (len(self) == len(other) and
+            (np.abs(a['positions']-b['positions'])<prec).all() and
+            (a['numbers'] == b['numbers']).all() and
+            (np.abs((self.cell-other.cell))<prec).all() and
+            (self.pbc == other.pbc).all())
+
 #prints all available properties in list of Atoms
 def check_keys(db):
     for at in db:
@@ -91,7 +101,7 @@ def get_E0(db, tag=''):
     return E0
 
 #returns desired property for list of Atoms
-def get_prop(db, type, prop='', peratom=False):
+def get_prop(db, type, prop='', peratom=False, E0={}):
     if peratom:
         N = lambda a : a.get_global_number_of_atoms()
     else:
@@ -105,7 +115,8 @@ def get_prop(db, type, prop='', peratom=False):
     if type == 'meth':
         return np.array(list(map(lambda a : getattr(a, prop)()/N(a), db)))
     if type == 'bind':
-        E0 = get_E0(db, prop)
+        if not E0:
+            E0 = get_E0(db, prop)
         return np.array(list(map(lambda a : (a.info['energy'+prop]-np.sum([E0[s] for s in a.get_chemical_symbols()]))/N(a), db)))
 
 def set_prop(db, type, prop, tag):
@@ -123,3 +134,22 @@ def calc_virial(db, tag='', keep=False, convstr=False):
             at.info['virial'+tag] = -at.info.pop('stress'+tag)*at.get_volume()
         if convstr:
             at.info['virial'+tag] = ' '.join(map(str, at.info.pop('virial'+tag).reshape(-1,order='F')))
+
+
+def split_db(db, N=150, seed=12345):
+    db_ia = sel_by_conf_type(db, 'IsolatedAtoms')
+    db_im = sel_by_conf_type(db, 'IsolatedMolecules')
+    db_lc = sel_by_conf_type(db, 'LiquidConfigs')
+    per = np.random.RandomState(seed=seed).permutation(len(db_lc))
+    db1 = db_ia.copy()
+    db2 = db_ia.copy()
+    for i in range(len(db_lc)):
+        frame_lc = db_lc[i]
+        frame_im = sel_by_uid(db_im, frame_lc.info['uid'])
+        if i in per[:N]:
+            db1 += [frame_lc]
+            db1 += frame_im
+        else:
+            db2 += [frame_lc]
+            db2 += frame_im
+    return db1, db2

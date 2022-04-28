@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import numpy as np
 
 # ### Standard Error of the Mean
@@ -45,6 +46,14 @@ def plot_traj(fnames, **kwargs):
         col = kwargs['col']
     else:
         col = 1
+    if 'colors' in kwargs.keys():
+        colors = kwargs['colors']
+    else:
+        colors = np.array(cm.get_cmap('tab10').colors)
+    if 'alpha' in kwargs.keys():
+        alpha = kwargs['alpha']
+    else:
+        alpha = 1.0
     if 'Navg' in kwargs.keys():
         N = kwargs['Navg']
     else:
@@ -64,11 +73,11 @@ def plot_traj(fnames, **kwargs):
             lb = kwargs['legend'][i]
         else:
             lb = None
-        plt.plot(thermo[ymin:ymax,0]/Nsamp, y, label=lb)
+        plt.plot(thermo[ymin:ymax,0]/Nsamp, y, label=lb, color=colors[i,:], alpha=alpha)
         if 'sel' in kwargs.keys():
             sel = kwargs['sel']
             if (i+1) in sel.keys():
-                plt.scatter(thermo[sel[i+1],0]/Nsamp, y[np.array(sel[i+1])-ymin], marker='o', color='C{}'.format(i), s=50)
+                plt.scatter(thermo[sel[i+1],0]/Nsamp, y[np.array(sel[i+1])-ymin], marker='o', color=colors[i,:], s=50)
         i += 1
     if 'title' in kwargs.keys():
         plt.title(kwargs['title'])
@@ -87,6 +96,14 @@ def plot_hist(fnames, **kwargs):
         col = kwargs['col']
     else:
         col = 1
+    if 'colors' in kwargs.keys():
+        colors = kwargs['colors']
+    else:
+        colors = np.array(cm.get_cmap('tab10').colors)
+    if 'alpha' in kwargs.keys():
+        alpha = kwargs['alpha']
+    else:
+        alpha = 0.7
     if 'bins' in kwargs.keys():
         b = kwargs['bins']
     else:
@@ -117,7 +134,7 @@ def plot_hist(fnames, **kwargs):
             lb = kwargs['legend'][i]
         else:
             lb = None
-        result = plt.hist(thermo[start:,col], bins=b, histtype=htype, label=lb, orientation=orientation, alpha=0.7, density=density)
+        result = plt.hist(thermo[start:,col], bins=b, histtype=htype, label=lb, orientation=orientation, alpha=alpha, density=density, color=colors[i,:])
         centers = result[1][:-1]+np.diff(result[1])/2
         counts = result[0]
         # avg = np.sum(centers*counts)/np.sum(counts)

@@ -84,14 +84,19 @@ def extract_molecs(db, fct=1):
         molID = at.arrays['molID']
         molCM = []
         molSym = []
+        molQ = []
         for m in np.unique(molID):
             mol = at[molID==m] #copy by value
             mass = mol.get_masses()
             cm = np.sum(mol.positions*mass.reshape(-1,1), axis=0)/np.sum(mass)
             molCM.append(cm)
             molSym.append(mol_chem_name(mol.symbols.get_chemical_formula()))
+            if 'initial_charges' in at.arrays:
+                molQ.append(np.sum(mol.arrays['initial_charges']))
         newmol = Atoms(positions=np.array(molCM), pbc=True, cell=at.cell)
         newmol.arrays['molSym'] = np.array(molSym)
+        if molQ:
+            newmol.arrays['initial_charges'] = np.array(molQ)
         moldb.append(newmol)
     return moldb
 
@@ -146,15 +151,37 @@ def wrap_molecs(db, fct=1.0, full=False, prog=False, returnMols=False):
 #splits condensed phase into separate molecules
 def split_molecs(db, scale=1.0):
     smdb = []
-    for at in db:
+    if isinstance(scale, float):
+        scale = np.ones(len(db))*scale
+    for i, at in enumerate(db):
         molID = at.arrays['molID']
         for m in np.unique(molID):
-            smdb += [at[molID==m]] #copy by value
-    for at in smdb:
-        at.cell *= scale
+            buf = at[molID==m] #copy by value
+            buf.cell *= scale[i]
+            smdb += [buf]
+    return smdb
+
+#splits condensed phase into dictionary of molecules by type
+def split_molecs_dict(db, L=20.0):
+    smdb = {}
+    for i, at in enumerate(db):
+        molID = at.arrays['molID']
+        for m in np.unique(molID):
+            buf = at[molID==m] #copy by value
+            buf.cell = [L,L,L]
+            buf.center()
+            buf.info['mID'] = m
+            molSym = mol_chem_name(buf.get_chemical_formula())
+            if molSym in smdb:
+                smdb[molSym] += [buf]
+            else:
+                smdb[molSym] = [buf]
     return smdb
 
 #collects intra- and inter- molecular contributions
+#checked in 02-DFTcalcs-Castep/10-EC4-EMC8-singleMolec-PBEG06/FiniteSizeCheck
+#intra-virial is volume independent, while intra-stress is not
+#therefore decomposition only works for the virial
 def collect_molec_results(db, smdb, fext='', dryrun=False):
     for at in db:
         sel = ea.sel_by_uid(smdb, at.info['uid']) #assumes molecules are in the original condensed phase order
@@ -168,6 +195,53 @@ def collect_molec_results(db, smdb, fext='', dryrun=False):
             at.info['energy'+fext+'_interm'] = at.info['energy'+fext]-at.info['energy'+fext+'_intram']
             at.info['virial'+fext+'_interm'] = at.info['virial'+fext]-at.info['virial'+fext+'_intram']
             at.arrays['forces'+fext+'_interm'] = at.arrays['forces'+fext]-at.arrays['forces'+fext+'_intram']
+
+#WORK IN PROGRESS
+# def collect_molec_results_dict(db, smdb, fext=''):
+#     for at in db:
+#         sm = []
+#         uid = at.info['uid']
+#         for molSym in smdb:
+#             sm += ea.sel_by_uid(smdb[molSym], uid)
+#         idx = np.argsort(ea.get_prop(sm, 'info', 'mID'))
+#         sel = [sm[i] for i in idx]
+#         coords = at.positions - np.concatenate(ea.get_prop(sel,'arrays','positions')).astype(float)
+#         molIDtry = np.unique(np.round(coords,1), axis=0, return_inverse=True)[1]
+#         molID = [0]
+#         for i in range(molIDtry.size-1):
+#             if molIDtry[i]!=molIDtry[i+1]:
+#                 molID += [molID[-1]+1]
+#             else:
+#                 molID += [molID[-1]]
+#         check = np.sum(np.concatenate(ea.get_prop(sm, 'arrays', 'molID')).astype(int)-molID)
+#         print(check)
+def collect_molec_results_dict(db, smdb, fext='', dryrun=False):
+    for at in db:
+        del at.calc
+        sm = []
+        uid = at.info['uid']
+        for molSym in smdb:
+            sm += ea.sel_by_uid(smdb[molSym], uid)
+        idx = np.argsort(ea.get_prop(sm, 'info', 'mID'))
+        sel = [sm[i] for i in idx]
+        #check positions differ only up to a translation
+        if dryrun:
+            molID = at.arrays['molID']
+            mdiffs = []
+            for m in np.unique(at.arrays['molID']):
+                diffs = at.positions[molID==m,:]-sel[m].positions
+                mdiffs += [np.max(np.abs(diffs-diffs[0,:]))]
+            print(np.max(mdiffs))
+        else:
+            # at.info['energy'+fext+'_intram_mol'] = ea.get_prop(sel, 'info', 'energy'+fext)
+            at.info['energy'+fext+'_intram'] = sum(ea.get_prop(sel, 'info', 'energy'+fext))
+            at.info['virial'+fext+'_intram'] = sum(ea.get_prop(sel, 'info', 'virial'+fext))
+            at.arrays['forces'+fext+'_intram'] = np.concatenate(ea.get_prop(sel, 'arrays', 'forces'+fext)).astype(float)
+            at.arrays['initial_charges'+fext+'_intram'] = np.concatenate(ea.get_prop(sel, 'arrays', 'initial_charges'+fext)).astype(float)
+            at.info['energy'+fext+'_interm'] = at.info['energy'+fext]-at.info['energy'+fext+'_intram']
+            at.info['virial'+fext+'_interm'] = at.info['virial'+fext]-at.info['virial'+fext+'_intram']
+            at.arrays['forces'+fext+'_interm'] = at.arrays['forces'+fext]-at.arrays['forces'+fext+'_intram']
+            at.arrays['initial_charges'+fext+'_interm'] = at.arrays['initial_charges'+fext]-at.arrays['initial_charges'+fext+'_intram']
 
 #starting from one configuration, adjusts the volume according to vol_fracs
 def scan_vol(at, vol_fracs, frozen=True):
