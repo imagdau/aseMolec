@@ -85,6 +85,8 @@ def extract_molecs(db, fct=1):
         molCM = []
         molSym = []
         molQ = []
+        molF = []
+        molT = []
         for m in np.unique(molID):
             mol = at[molID==m] #copy by value
             mass = mol.get_masses()
@@ -93,10 +95,16 @@ def extract_molecs(db, fct=1):
             molSym.append(mol_chem_name(mol.symbols.get_chemical_formula()))
             if 'initial_charges' in at.arrays:
                 molQ.append(np.sum(mol.arrays['initial_charges']))
+            if 'forces' in at.arrays:
+                molF.append(np.sum(mol.arrays['forces'], axis=0))
+                molT.append(np.sum(np.cross(mol.positions-cm, mol.arrays['forces'], axis=1), axis=0))
         newmol = Atoms(positions=np.array(molCM), pbc=True, cell=at.cell)
         newmol.arrays['molSym'] = np.array(molSym)
         if molQ:
             newmol.arrays['initial_charges'] = np.array(molQ)
+        if molF:
+            newmol.arrays['forces'] = np.array(molF)
+            newmol.arrays['torques'] = np.array(molT)
         moldb.append(newmol)
     return moldb
 
@@ -190,10 +198,12 @@ def collect_molec_results(db, smdb, fext='', dryrun=False):
         else:
             at.info['energy'+fext+'_intram_mol'] = ea.get_prop(sel, 'info', 'energy'+fext)
             at.info['energy'+fext+'_intram'] = sum(ea.get_prop(sel, 'info', 'energy'+fext))
-            at.info['virial'+fext+'_intram'] = sum(ea.get_prop(sel, 'info', 'virial'+fext))
+            if ('virial'+fext) in at.info.keys():
+                at.info['virial'+fext+'_intram'] = sum(ea.get_prop(sel, 'info', 'virial'+fext))
             at.arrays['forces'+fext+'_intram'] = np.concatenate(ea.get_prop(sel, 'arrays', 'forces'+fext)).astype(float)
             at.info['energy'+fext+'_interm'] = at.info['energy'+fext]-at.info['energy'+fext+'_intram']
-            at.info['virial'+fext+'_interm'] = at.info['virial'+fext]-at.info['virial'+fext+'_intram']
+            if ('virial'+fext) in at.info.keys():
+                at.info['virial'+fext+'_interm'] = at.info['virial'+fext]-at.info['virial'+fext+'_intram']
             at.arrays['forces'+fext+'_interm'] = at.arrays['forces'+fext]-at.arrays['forces'+fext+'_intram']
 
 #collects molecules without assuming any order, but expects mID in info

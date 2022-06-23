@@ -1,6 +1,8 @@
 import ase.io
 from ase import Atoms
 import os
+import numpy as np
+from LieACE.tools import MACECalculator
 
 def eval_gap_quip(inxyz_file, outxyz_file, gap_file, init_args=None):
     quipcmd = "atoms_filename="+inxyz_file
@@ -20,3 +22,14 @@ def eval_gap_quip(inxyz_file, outxyz_file, gap_file, init_args=None):
         del at.info['cutoff']
     ase.io.write(outxyz_file, db)
     os.system('rm -rfv '+temp_file)
+
+def eval_mace(inxyz_file, outxyz_file, mace_file, init_args=None):
+    db = ase.io.read(inxyz_file, ':')
+    atomic_numbers = list(np.unique([n for at in db for n in at.numbers]))
+    calc = MACECalculator(model_path=mace_file, r_max=6.0, device='cpu', atomic_numbers=atomic_numbers, default_dtype="float64")
+    for at in db:
+        at.calc = calc
+        at.info['energy'] = at.get_potential_energy()
+        at.arrays['forces'] = at.get_forces()
+        del at.calc
+    ase.io.write(outxyz_file, db)
