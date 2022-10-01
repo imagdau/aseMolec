@@ -74,39 +74,76 @@ def find_num_nb(db, Rcut=6.0):
 
 #extracts molecules CM into a new trajectory without changing any coordinates
 #designed mainly for extracting diffusion coefficients, assumes no wrapping
-#assumes molIDs exist and molecules are full
+#assumes molIDs exist and molecules are full !!!IMPORTANT, calculation of CM, intertia, torque ... !!!
 #this is a bit redundant with wrap_molecs, maybe could be combined in the future
-def extract_molecs(db, fct=1):
+def extract_molecs(db, fct=1, intra_inter=False):
     moldb = []
     for at in db:
         if 'molID' not in at.arrays.keys():
             find_molecs([at], fct=fct)
         molID = at.arrays['molID']
         molCM = []
+        molM = []
+        molI = []
         molSym = []
         molQ = []
         molF = []
         molT = []
+        atftrn = []
+        atfrot = []
         for m in np.unique(molID):
             mol = at[molID==m] #copy by value
             mass = mol.get_masses()
             cm = np.sum(mol.positions*mass.reshape(-1,1), axis=0)/np.sum(mass)
+            M = np.sum(mass)
+            I = mom_inertia(mol)
             molCM.append(cm)
+            molM.append(M)
+            molI.append(I.flatten())
             molSym.append(mol_chem_name(mol.symbols.get_chemical_formula()))
             if 'initial_charges' in at.arrays:
                 molQ.append(np.sum(mol.arrays['initial_charges']))
             if 'forces' in at.arrays:
-                molF.append(np.sum(mol.arrays['forces'], axis=0))
-                molT.append(np.sum(np.cross(mol.positions-cm, mol.arrays['forces'], axis=1), axis=0))
+                Fcm = np.sum(mol.arrays['forces'], axis=0)
+                Tcm = np.sum(np.cross(mol.positions-cm, mol.arrays['forces'], axis=1), axis=0)
+                ftrn = mass.reshape(-1,1)/M*Fcm #redistributed to atoms
+                frot = mass.reshape(-1,1)*np.cross(np.linalg.solve(I, Tcm),mol.positions-cm) #reditributed to atoms
+                molF.append(Fcm)
+                molT.append(Tcm)
+                atftrn.append(ftrn)
+                atfrot.append(frot)
         newmol = Atoms(positions=np.array(molCM), pbc=True, cell=at.cell)
+        newmol.set_masses(molM)
         newmol.arrays['molSym'] = np.array(molSym)
+        newmol.arrays['momInertia'] = np.array(molI)
         if molQ:
             newmol.arrays['initial_charges'] = np.array(molQ)
         if molF:
             newmol.arrays['forces'] = np.array(molF)
             newmol.arrays['torques'] = np.array(molT)
         moldb.append(newmol)
+        if intra_inter:
+            at.arrays['forces_trans'] = np.concatenate(atftrn)
+            at.arrays['forces_rot'] = np.concatenate(atfrot)
+            at.arrays['forces_vib'] = at.arrays['forces']-at.arrays['forces_trans']-at.arrays['forces_rot']
     return moldb
+
+#assumes coordinates are unwrapped
+def mom_inertia(mol):
+    m = mol.get_masses()
+    rcm = np.sum(m.reshape(-1,1)*mol.positions,axis=0)/np.sum(m)
+    r = mol.positions-rcm
+    I = np.zeros([3,3])
+    I[0,0] = np.sum(m*(r[:,1]**2+r[:,2]**2))
+    I[1,1] = np.sum(m*(r[:,0]**2+r[:,2]**2))
+    I[2,2] = np.sum(m*(r[:,0]**2+r[:,1]**2))
+    I[0,1] = -np.sum(m*r[:,0]*r[:,1])
+    I[0,2] = -np.sum(m*r[:,0]*r[:,2])
+    I[1,2] = -np.sum(m*r[:,1]*r[:,2])
+    I[1,0] = I[0,1]
+    I[2,0] = I[0,2]
+    I[2,1] = I[1,2]
+    return I
 
 #wraps single molecule: completes molecule over pbc and sfits COM back to unit cell
 def wrap_molec(mol, fct=1.0, full=False):

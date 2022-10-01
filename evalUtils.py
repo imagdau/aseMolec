@@ -2,7 +2,7 @@ import ase.io
 from ase import Atoms
 import os
 import numpy as np
-from LieACE.tools import MACECalculator
+from mace.calculators import MACECalculator
 
 def eval_gap_quip(inxyz_file, outxyz_file, gap_file, init_args=None):
     quipcmd = "atoms_filename="+inxyz_file

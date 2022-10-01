@@ -22,11 +22,17 @@ def plot_prop(prop1, prop2, **kwargs):
     lmin = min(min(prop1), min(prop2))
     lmax = max(max(prop1), max(prop2))
     RMSE = np.sqrt(np.mean((prop1-prop2)**2))
+    RRMSE = RMSE/np.sqrt(np.mean((prop1-np.mean(prop1))**2))
     if 'cols' in kwargs.keys():
         cols = kwargs['cols']
     else:
         cols = None
-    plt.scatter(prop1, prop2, s=3.0, c=cols, label="RMSE = %.4f" % RMSE)
+    if 'cmap' in kwargs.keys():
+        cmap = kwargs['cmap']
+    else:
+        cmap = None
+    plt.scatter(prop1, prop2, s=3.0, c=cols, cmap=cmap)
+    plt.text(0.1, 0.8, "  RMSE = {0:.4f}\nRRMSE = {1:.4f}".format(RMSE, RRMSE), transform=plt.gca().transAxes)
     plt.xlim([lmin, lmax])
     plt.ylim([lmin, lmax])
     plt.plot([lmin, lmax], [lmin, lmax], '--', linewidth=1, color='gray')
@@ -35,7 +41,6 @@ def plot_prop(prop1, prop2, **kwargs):
     if 'labs' in kwargs.keys():
         plt.xlabel(kwargs['labs'][0])
         plt.ylabel(kwargs['labs'][1])
-    plt.legend()
     plt.gca().set_aspect('equal', adjustable='box')
     plt.gca().ticklabel_format(useOffset=False)
     return RMSE
@@ -129,13 +134,17 @@ def plot_hist(fnames, **kwargs):
         density = kwargs['density']
     else:
         density = False
+    if 'scale' in kwargs.keys():
+        scale = kwargs['scale']
+    else:
+        scale = 1
     for f in fnames:
         thermo = np.loadtxt(f)
         if 'legend' in kwargs.keys():
             lb = kwargs['legend'][i]
         else:
             lb = None
-        result = plt.hist(thermo[start:,col], bins=b, histtype=htype, label=lb, orientation=orientation, alpha=alpha, density=density, color=colors[i,:])
+        result = plt.hist(thermo[start:,col]/scale, bins=b, histtype=htype, label=lb, orientation=orientation, alpha=alpha, density=density, color=colors[i,:])
         centers = result[1][:-1]+np.diff(result[1])/2
         counts = result[0]
         # avg = np.sum(centers*counts)/np.sum(counts)
