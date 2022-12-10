@@ -31,8 +31,19 @@ def plot_prop(prop1, prop2, **kwargs):
         cmap = kwargs['cmap']
     else:
         cmap = None
+    if 'rel' in kwargs.keys():
+        rel = kwargs['rel']
+    else:
+        rel = False
+    if 'xy' in kwargs.keys():
+        xy = kwargs['xy']
+    else:
+        xy = [0.35,0.04]
     plt.scatter(prop1, prop2, s=3.0, c=cols, cmap=cmap)
-    plt.text(0.1, 0.8, "  RMSE = {0:.4f}\nRRMSE = {1:.4f}".format(RMSE, RRMSE), transform=plt.gca().transAxes)
+    if rel:
+        plt.text(xy[0], xy[1], "  RMSE = {0:.4f}\nRRMSE = {1:.4f}".format(RMSE, RRMSE), transform=plt.gca().transAxes)
+    else:
+        plt.text(xy[0], xy[1], "  RMSE = {0:.4f}".format(RMSE), transform=plt.gca().transAxes)
     plt.xlim([lmin, lmax])
     plt.ylim([lmin, lmax])
     plt.plot([lmin, lmax], [lmin, lmax], '--', linewidth=1, color='gray')
