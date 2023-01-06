@@ -87,6 +87,7 @@ def extract_molecs(db, fct=1, intra_inter=False):
         molI = []
         molSym = []
         molQ = []
+        molD = []
         molF = []
         molT = []
         atftrn = []
@@ -102,12 +103,18 @@ def extract_molecs(db, fct=1, intra_inter=False):
             molI.append(I.flatten())
             molSym.append(mol_chem_name(mol.symbols.get_chemical_formula()))
             if 'initial_charges' in at.arrays:
-                molQ.append(np.sum(mol.arrays['initial_charges']))
+                charge = mol.arrays['initial_charges']
+                D = np.sum((mol.positions-cm)*charge.reshape(-1,1), axis=0) #subtract cm, so dipole is also correct for charges molecules, e.g. PF6
+                molQ.append(np.sum(charge))
+                molD.append(D)
             if 'forces' in at.arrays:
                 Fcm = np.sum(mol.arrays['forces'], axis=0)
                 Tcm = np.sum(np.cross(mol.positions-cm, mol.arrays['forces'], axis=1), axis=0)
                 ftrn = mass.reshape(-1,1)/M*Fcm #redistributed to atoms
-                frot = mass.reshape(-1,1)*np.cross(np.linalg.solve(I, Tcm),mol.positions-cm) #reditributed to atoms
+                if np.allclose(I, 0, atol=1e-6): #this is the case for molecules made of single atoms: Li-ion
+                    frot = np.zeros([1,3])
+                else:
+                    frot = mass.reshape(-1,1)*np.cross(np.linalg.solve(I, Tcm),mol.positions-cm) #reditributed to atoms
                 molF.append(Fcm)
                 molT.append(Tcm)
                 atftrn.append(ftrn)
@@ -118,6 +125,8 @@ def extract_molecs(db, fct=1, intra_inter=False):
         newmol.arrays['momInertia'] = np.array(molI)
         if molQ:
             newmol.arrays['initial_charges'] = np.array(molQ)
+            newmol.arrays['dipoles'] = np.array(molD)
+            newmol.arrays['dipoles_abs'] = np.sqrt(np.sum(np.array(molD)**2, axis=1))/0.2081943 #from e*A to Debye
         if molF:
             newmol.arrays['forces'] = np.array(molF)
             newmol.arrays['torques'] = np.array(molT)
