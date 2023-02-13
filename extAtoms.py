@@ -54,6 +54,8 @@ def sel_by_conf_type(db, config_type):
 #deletes all properties except for coordinates and identification
 def del_prop(db):
     for at in db:
+        if at.calc:
+            del at.calc
         keys = list(at.info.keys())
         for k in keys:
             if 'energy' in k:
@@ -72,6 +74,8 @@ def del_prop(db):
 #deletes all properties which contain tag
 def del_prop_by_tag(db, tag):
     for at in db:
+        if at.calc:
+            del at.calc
         keys = list(at.info.keys())
         for k in keys:
             if tag in k:
