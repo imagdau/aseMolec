@@ -3,7 +3,6 @@ import matplotlib.cm as cm
 import numpy as np
 import extAtoms as ea
 import re
-# from matplotlib.colors import TABLEAU_COLORS as clrs ## don't need this, they are already defined
 
 # ### Standard Error of the Mean
 # a = np.random.normal(size=100000)
@@ -334,14 +333,19 @@ def simpleplot(db, i, j, **kwargs):
     plt.ylabel(k2+' ('+db[k2]['units']+')')
     
 def listdict_to_dictlist(dct):
-    Ns = np.array(list(map(len, dct.values())))
+    Ns = np.array([len(v) for v in dct.values() if type(v)==list])
+    if Ns.size==0:
+        Ns = np.array([1]) #edge case: none of the dct elements is a list
     assert np.all(Ns==Ns[0]) #check that all lists are the same size
     dlist = []
     for i in range(Ns[0]):
         d = {}
         for k in list(dct):
-            d[k] = dct[k][i]
-        dlist += [d]        
+            if type(dct[k])==list:
+                d[k] = dct[k][i]
+            else: #if element is not a list, replicate values
+                d[k] = dct[k]
+        dlist += [d]
     return dlist
 
 def multiplot(db, i, jcol, **kwargs):
@@ -350,9 +354,10 @@ def multiplot(db, i, jcol, **kwargs):
     for k,j in enumerate(jcol):
         if kwargs:
             kwarg_list = listdict_to_dictlist(kwargs)
+            assert len(kwarg_list)==len(jcol)
             simpleplot(db, i, j, label=keys[j], **kwarg_list[k])
         else:
             simpleplot(db, i, j, label=keys[j])
-        assert unts == db[keys[j]]['units']
+        assert unts==db[keys[j]]['units']
     plt.ylabel('Series ('+unts+')')
     plt.legend()
