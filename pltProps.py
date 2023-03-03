@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
 import extAtoms as ea
+import re
+# from matplotlib.colors import TABLEAU_COLORS as clrs ## don't need this, they are already defined
 
 # ### Standard Error of the Mean
 # a = np.random.normal(size=100000)
@@ -305,3 +307,52 @@ def plot_intra_inter_virial(db_test, db_pred):
     plt.savefig('virial.png')
     plt.close()
     return RMSE
+
+def loadtxttag(fname):
+    with open(fname, 'r') as file:
+        header = file.readline().split()
+        assert header[0] == '#'            
+        fields = header[1:]
+    dat = np.loadtxt(fname)
+    db = dict()
+    for i, aux in enumerate(fields):
+        buf = re.findall('\((.*?)\)', aux)
+        if buf:
+            fld = aux[:-len(buf[0])-2]
+            db[fld] = {'units':buf[0], 'data':dat[:,i]}
+        else:
+            fld = aux
+            db[fld] = {'data':dat[:,i]}
+    return db
+
+def simpleplot(db, i, j, **kwargs):
+    keys = list(db)
+    k1 = keys[i]
+    k2 = keys[j]
+    plt.plot(db[k1]['data'], db[k2]['data'], **kwargs)
+    plt.xlabel(k1+' ('+db[k1]['units']+')')
+    plt.ylabel(k2+' ('+db[k2]['units']+')')
+    
+def listdict_to_dictlist(dct):
+    Ns = np.array(list(map(len, dct.values())))
+    assert np.all(Ns==Ns[0]) #check that all lists are the same size
+    dlist = []
+    for i in range(Ns[0]):
+        d = {}
+        for k in list(dct):
+            d[k] = dct[k][i]
+        dlist += [d]        
+    return dlist
+
+def multiplot(db, i, jcol, **kwargs):
+    keys = list(db)
+    unts = db[keys[jcol[0]]]['units']
+    for k,j in enumerate(jcol):
+        if kwargs:
+            kwarg_list = listdict_to_dictlist(kwargs)
+            simpleplot(db, i, j, label=keys[j], **kwarg_list[k])
+        else:
+            simpleplot(db, i, j, label=keys[j])
+        assert unts == db[keys[j]]['units']
+    plt.ylabel('Series ('+unts+')')
+    plt.legend()
