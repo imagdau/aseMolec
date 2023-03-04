@@ -329,9 +329,17 @@ def simpleplot(db, i, j, **kwargs):
     keys = list(db)
     k1 = keys[i]
     k2 = keys[j]
+    if 'units' in db[k1]:
+        u1 = ' ('+db[k1]['units']+')'
+    else:
+        u1 = ''
+    if 'units' in db[k2]:
+        u2 = ' ('+db[k2]['units']+')'
+    else:
+        u2 = ''
     plt.plot(db[k1]['data'], db[k2]['data'], **kwargs)
-    plt.xlabel(k1+' ('+db[k1]['units']+')')
-    plt.ylabel(k2+' ('+db[k2]['units']+')')
+    plt.xlabel(k1+u1)
+    plt.ylabel(k2+u2)
     
 def listdict_to_dictlist(dct):
     Ns = np.array([len(v) for v in dct.values() if type(v)==list])
