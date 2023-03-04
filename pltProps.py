@@ -309,6 +309,7 @@ def plot_intra_inter_virial(db_test, db_pred):
 
 def loadtxttag(fname):
     with open(fname, 'r') as file:
+        comment = file.readline()
         header = file.readline().split()
         assert header[0] == '#'            
         fields = header[1:]
