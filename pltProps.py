@@ -244,6 +244,143 @@ def plot_intra_inter_energy(db_test, db_pred):
     plt.close()
     return RMSE
 
+def plot_hist_thermo(thermos, **kwargs):
+    avgs = []
+    stds = []
+    i = 0
+    if 'col' in kwargs.keys():
+        col = kwargs['col']
+    else:
+        col = 1
+    if 'colors' in kwargs.keys():
+        colors = kwargs['colors']
+    else:
+        colors = np.array(cm.get_cmap('tab10').colors)
+    if 'alpha' in kwargs.keys():
+        alpha = kwargs['alpha']
+    else:
+        alpha = 0.7
+    if 'bins' in kwargs.keys():
+        b = kwargs['bins']
+    else:
+        b = 100
+    if 'start' in kwargs.keys():
+        start = kwargs['start']
+    else:
+        start = 0
+    if 'orient' in kwargs.keys():
+        orientation=kwargs['orient']
+    else:
+        orientation='vertical'
+    if 'htype' in kwargs.keys():
+        htype = kwargs['htype']
+    else:
+        htype = 'step'
+    if 'Navg' in kwargs.keys():
+        Navg = kwargs['Navg']
+    else:
+        Navg = 1
+    if 'density' in kwargs.keys():
+        density = kwargs['density']
+    else:
+        density = False
+    if 'scale' in kwargs.keys():
+        scale = kwargs['scale']
+    else:
+        scale = 1
+    for thermo in thermos:
+        if 'legend' in kwargs.keys():
+            lb = kwargs['legend'][i]
+        else:
+            lb = None
+        result = plt.hist(thermo[start:,col]/scale, bins=b, histtype=htype, label=lb, orientation=orientation, alpha=alpha, density=density, color=colors[i,:])
+        centers = result[1][:-1]+np.diff(result[1])/2
+        counts = result[0]
+        # avg = np.sum(centers*counts)/np.sum(counts)
+        # std = np.sqrt(np.sum(((centers-avg)**2)*counts)/np.sum(counts))
+        # avg = np.mean(thermo[start:,col])
+        # std = np.std(thermo[start:,col])
+        avg, std, _ = stats(thermo[start:,col], Navg)
+        avgs += [avg]
+        stds += [std]
+        if 'sel' in kwargs.keys():
+            sel = kwargs['sel']
+            if (i+1) in sel.keys():
+                counts = np.histogram(thermo[start:,col], bins=b)
+                ids = np.argmin(np.abs(counts[1][:-1].reshape(-1,1)-thermo[sel[i+1],col]), axis=0)
+                plt.scatter(counts[1][ids], counts[0][ids], marker='o', color='C{}'.format(i), s=50)
+        i += 1
+    if 'title' in kwargs.keys():
+        plt.title(kwargs['title'])
+    if 'labs' in kwargs.keys():
+        plt.xlabel(kwargs['labs'][0])
+        plt.ylabel(kwargs['labs'][1])
+    if lb:
+        plt.legend()
+    return np.array(avgs), np.array(stds)
+
+def plot_menvs(menvs, lb, **kwargs):
+    if 'nbins' in kwargs.keys():
+        nbins = kwargs['nbins']
+    else:
+        nbins = np.max(menvs[lb])
+    bins = np.vstack([np.array(range(nbins+1))]*menvs[lb].shape[1])
+    counts, coords = np.histogramdd(menvs[lb], bins=bins)
+    #later could expend to more dimensions, for now just implement for 2
+    #for more than 2, need to make a choice on how to project in lower dimension
+    if 'cmap' in kwargs.keys():
+        cmap = kwargs['cmap']
+    else:
+        cmap = 'viridis'
+    plt.pcolormesh(coords[0]-0.5, coords[1]-0.5, counts.T, cmap=cmap, edgecolors='grey')
+    plt.xticks(coords[0][:-1])
+    plt.yticks(coords[1][:-1])
+    if 'style' in kwargs.keys():
+        if kwargs['style']=='cbar':
+            plt.colorbar()
+        if kwargs['style']=='nums':
+            for i in range(nbins):
+                for j in range(nbins):
+                    plt.text(i,j,'{0:d}'.format(int(counts[i, j])), ha='center', va='center')
+    if 'labs' in kwargs.keys():
+        plt.xlabel(kwargs['labs'][0])
+        plt.ylabel(kwargs['labs'][1])
+    if 'title' in kwargs.keys():
+        plt.title(kwargs['title'])
+
+def plot_intra_inter_energy(db_test, db_pred):
+    E0_test = ea.get_E0(db_test)
+    E0_pred = ea.get_E0(db_pred)
+    db_test = ea.sel_by_conf_type(db_test, 'LiquidConfigs')
+    db_pred = ea.sel_by_conf_type(db_pred, 'LiquidConfigs')
+
+    RMSE = {}
+    plt.rcParams.update({'font.size': 12})
+    plt.figure(figsize=(8,8), dpi=200)
+    plt.subplot(2,2,1)
+    RMSE['IntraEnergy'] = plot_prop(ea.get_prop(db_test, 'bind', '_intram', True, E0_test).flatten(), \
+                                    ea.get_prop(db_pred, 'bind', '_intram', True, E0_pred).flatten(), \
+                                    title='Intra Energy (ev/atom) ', labs=['DFT', 'GAP'])
+    plt.subplot(2,2,2)
+    RMSE['InterEnergy'] = plot_prop(ea.get_prop(db_test, 'info', 'energy_interm', True).flatten(), \
+                                    ea.get_prop(db_pred, 'info', 'energy_interm', True).flatten(), \
+                                    title='Inter Energy (ev/atom) ', labs=['DFT', 'GAP'])
+    plt.subplot(2,2,3)
+    # RMSE['AtomEnergy'] = plot_prop(np.array([E0_test[k] for k in E0_test]), \
+    #                                np.array([E0_pred[k] for k in E0_pred]), \
+    #                                title='Atomic Energy (ev/atom) ', labs=['DFT', 'GAP'])
+    RMSE['AtomEnergy'] = plot_prop(ea.get_prop(db_test, 'atom', peratom=True, E0=E0_test).flatten(), \
+                                   ea.get_prop(db_pred, 'atom', peratom=True, E0=E0_pred).flatten(), \
+                                   title='Atom Energy (ev/atom) ', labs=['DFT', 'GAP'])
+    plt.subplot(2,2,4)
+    RMSE['TotalEnergy'] = plot_prop(ea.get_prop(db_test, 'info', 'energy', True).flatten(), \
+                                    ea.get_prop(db_pred, 'info', 'energy', True).flatten(), \
+                                    title='Total Energy (ev/atom) ', labs=['DFT', 'GAP'])
+    plt.tight_layout(pad=0.5)
+    plt.savefig('energy.png')
+    plt.close()
+    return RMSE
+
 def plot_intra_inter_forces(db_test, db_pred):
     db_test = ea.sel_by_conf_type(db_test, 'LiquidConfigs')
     db_pred = ea.sel_by_conf_type(db_pred, 'LiquidConfigs')
