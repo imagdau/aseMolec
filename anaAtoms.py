@@ -7,6 +7,7 @@ import extAtoms as ea
 import scipy.spatial
 from ase.ga.utilities import get_rdf
 import ase.data
+import warnings
 chem_syms = ase.data.chemical_symbols
 
 #extends fct to dictionary if needed
@@ -30,7 +31,8 @@ def mol_chem_name(formula):
     elif formula=='F6P':
         return 'PF6'
     else:
-        raise NameError('Unknown formula "'+formula+'"')
+        warnings.warn('Unknown formula "'+formula+'"')
+        return 'UNK'
 
 #computes molID for single config, not adding molID to atoms.arrays
 def find_molec(at, fct=1.0):
