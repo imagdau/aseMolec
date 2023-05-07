@@ -24,8 +24,16 @@ def modif_natural_cutoffs(at, fct):
 def mol_chem_name(formula):
     if formula=='C3H4O3':
         return 'EC'
+    if formula=='C4H6O3':
+        return 'PC'
+    if formula=='C3H2O3':
+        return 'VC'
     elif formula=='C4H8O3':
         return 'EMC'
+    elif formula=='C3H6O3':
+        return 'DMC'
+    elif formula=='C5H10O3':
+        return 'DEC'
     elif formula=='Li':
         return 'Li'
     elif formula=='F6P':
