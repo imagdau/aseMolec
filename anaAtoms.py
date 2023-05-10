@@ -41,7 +41,7 @@ def mol_chem_name(formula):
     elif len(formula)==1:
         return formula
     else:
-        warnings.warn('Unknown formula "'+formula+'"')
+        warnings.warn('Unknown formula '+formula)
         return 'UNK'
 
 #computes molID for single config, not adding molID to atoms.arrays
