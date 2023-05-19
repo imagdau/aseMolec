@@ -16,7 +16,13 @@ def modif_natural_cutoffs(at, fct):
         return neighborlist.natural_cutoffs(at, mult=fct)
     elif type(fct) is dict:
         cutOff = neighborlist.natural_cutoffs(at, mult=1)
-        return [ctf*fct[el] for ctf, el in zip(cutOff, at.get_chemical_symbols())]
+        newCutOff = []
+        for ctf, el in zip(cutOff, at.get_chemical_symbols()):
+            if el in fct:
+                newCutOff += [ctf*fct[el]]
+            else:
+                newCutOff += [ctf]
+        return newCutOff
     else:
         raise NameError('Unknown fct type '+str(type(fct)))
 
@@ -41,8 +47,7 @@ def mol_chem_name(formula):
     elif len(formula)==1:
         return formula
     else:
-        print('Warning: Unknown formula '+formula)
-        return 'UNK'
+        return 'UNK_'+formula
 
 #computes molID for single config, not adding molID to atoms.arrays
 def find_molec(at, fct=1.0):
