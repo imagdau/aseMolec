@@ -36,6 +36,10 @@ def plot_prop(prop1, prop2, **kwargs):
         rel = kwargs['rel']
     else:
         rel = False
+    if 'return_rel' in kwargs.keys():
+        return_rel = kwargs['return_rel']
+    else:
+        return_rel = False
     if 'xy' in kwargs.keys():
         xy = kwargs['xy']
     else:
@@ -55,7 +59,10 @@ def plot_prop(prop1, prop2, **kwargs):
         plt.ylabel(kwargs['labs'][1])
     plt.gca().set_aspect('equal', adjustable='box')
     plt.gca().ticklabel_format(useOffset=False)
-    return RMSE
+    if return_rel:
+        return RMSE, RRMSE
+    else:
+        return RMSE
 
 # col, Navg, legend, labs, title
 def plot_traj(fnames, **kwargs):
