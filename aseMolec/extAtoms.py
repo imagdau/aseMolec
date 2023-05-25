@@ -24,7 +24,10 @@ def equal(self, other, prec=1e-12):
 #prints all available properties in list of Atoms
 def check_keys(db):
     for at in db:
-        print([at.info['config_type']]+list(at.info.keys())+list(at.arrays.keys()))
+        if 'config_type' in at.info:
+            print([at.info['config_type']]+list(at.info.keys())+list(at.arrays.keys()))
+        else:
+            print(list(at.info.keys())+list(at.arrays.keys()))
 
 #selects configurations which have property
 def sel_by_prop(db, prop):
