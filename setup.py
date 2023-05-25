@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='pythonAtoms',
+    name='aseMolec',
     version='1.0.0',
     url='https://github.com/imagdau/Phython-Atoms.git',
     author='Ioan-Bogdan Magdau',
