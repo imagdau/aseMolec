@@ -3,7 +3,7 @@ from ase import Atoms
 import ase.geometry
 from scipy import sparse
 import numpy as np
-import extAtoms as ea
+from aseMolec import extAtoms as ea
 import scipy.spatial
 from ase.ga.utilities import get_rdf
 import ase.data

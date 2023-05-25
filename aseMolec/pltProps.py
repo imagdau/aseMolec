@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
-import extAtoms as ea
+from aseMolec import extAtoms as ea
 import re
 
 # ### Standard Error of the Mean
