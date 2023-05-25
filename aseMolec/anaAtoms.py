@@ -8,6 +8,7 @@ import scipy.spatial
 from ase.ga.utilities import get_rdf
 import ase.data
 import warnings
+from collections import Counter
 chem_syms = ase.data.chemical_symbols
 
 #extends fct to dictionary if needed
@@ -48,6 +49,17 @@ def mol_chem_name(formula):
         return formula
     else:
         return 'UNK_'+formula
+
+def mol_config(molSym):
+    d = dict(Counter(molSym))
+    name = ''
+    name_UNK = ''
+    for k in d:
+        if 'UNK_' in k:
+            name_UNK += (k + '(%d)' % d[k] + ':')
+        else:
+            name += (k + '(%d)' % d[k] + ':')
+    return (name[:-1]+'---'+name_UNK[:-1])
 
 #computes molID for single config, not adding molID to atoms.arrays
 def find_molec(at, fct=1.0):
@@ -215,6 +227,8 @@ def wrap_molecs(db, fct=1.0, full=False, prog=False, returnMols=False):
             molSym.append(mol_chem_name(mol.symbols.get_chemical_formula()))
         newmol = Atoms(positions=np.array(molCM), pbc=True, cell=at.cell)
         newmol.arrays['molSym'] = np.array(molSym)
+        at.info['Nmols'] = len(newmol)
+        at.info['Comp'] = mol_config(newmol.arrays['molSym'])
         moldb.append(newmol)
     if returnMols:
         return moldb
