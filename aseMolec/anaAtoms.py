@@ -59,7 +59,7 @@ def mol_config(molSym):
             name_UNK += (k + '(%d)' % d[k] + ':')
         else:
             name += (k + '(%d)' % d[k] + ':')
-    return (name[:-1]+'---'+name_UNK[:-1])
+    return (name[:-1]+'---'*len(name_UK)+name_UNK[:-1])
 
 #computes molID for single config, not adding molID to atoms.arrays
 def find_molec(at, fct=1.0):
