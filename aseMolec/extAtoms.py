@@ -1,5 +1,6 @@
 import numpy as np
 import hashlib
+import ase.units
 
 #creates unique hash for a matrix of numbers
 def hash_array(v):
@@ -106,6 +107,10 @@ def get_E0(db, tag=''):
         if len(at)==1:
             E0[at.get_chemical_symbols()[0]]=at.info['energy'+tag]
     return E0
+
+def get_density_gcm3(at):
+    densfact = (ase.units.m/1.0e2)**3/ase.units.mol
+    return np.sum(at.get_masses())/at.get_volume()*densfact
 
 #returns desired property for list of Atoms
 def get_prop(db, type, prop='', peratom=False, E0={}):
