@@ -1,2 +1,1 @@
-# Provides some useful functionality to deal with molecular configurations.
-
+# Provides some useful functionality to query ASE Atoms lists, identify molecular fragments, create volume-scans, split properties into intra-/inter-, plot MD trajectories etc. Experimental, use with caution!
