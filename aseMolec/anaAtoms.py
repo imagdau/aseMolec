@@ -248,6 +248,8 @@ def split_molecs(db, scale=1.0):
 
 #splits condensed phase into dictionary of molecules by type
 def split_molecs_dict(db, L=20.0):
+    wrap_molecs(db, fct=1.0, full=False, prog=False)
+    ea.hash_atoms(db)
     smdb = {}
     for i, at in enumerate(db):
         molID = at.arrays['molID']
@@ -304,11 +306,12 @@ def collect_molec_results_dict(db, smdb, fext='', dryrun=False):
             at.info['energy'+fext+'_intram'] = sum(ea.get_prop(sel, 'info', 'energy'+fext))
             at.info['virial'+fext+'_intram'] = sum(ea.get_prop(sel, 'info', 'virial'+fext))
             at.arrays['forces'+fext+'_intram'] = np.concatenate(ea.get_prop(sel, 'arrays', 'forces'+fext)).astype(float)
-            at.arrays['initial_charges'+fext+'_intram'] = np.concatenate(ea.get_prop(sel, 'arrays', 'initial_charges'+fext)).astype(float)
             at.info['energy'+fext+'_interm'] = at.info['energy'+fext]-at.info['energy'+fext+'_intram']
             at.info['virial'+fext+'_interm'] = at.info['virial'+fext]-at.info['virial'+fext+'_intram']
             at.arrays['forces'+fext+'_interm'] = at.arrays['forces'+fext]-at.arrays['forces'+fext+'_intram']
-            at.arrays['initial_charges'+fext+'_interm'] = at.arrays['initial_charges'+fext]-at.arrays['initial_charges'+fext+'_intram']
+            if ('initial_charges'+fext) in at.info.keys():
+                at.arrays['initial_charges'+fext+'_intram'] = np.concatenate(ea.get_prop(sel, 'arrays', 'initial_charges'+fext)).astype(float)
+                at.arrays['initial_charges'+fext+'_interm'] = at.arrays['initial_charges'+fext]-at.arrays['initial_charges'+fext+'_intram']
 
 #starting from one configuration, adjusts the volume according to vol_fracs
 def scan_vol(at, vol_fracs, frozen=True):
