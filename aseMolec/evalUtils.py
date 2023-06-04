@@ -4,6 +4,16 @@ import os
 import numpy as np
 from mace.calculators import MACECalculator
 
+def eval_qap_quippy(db, gap, prog=True):
+    for i, at in enumerate(db):
+        if prog:
+            print('Evaluating config:', i)
+        at.calc = gap
+        at.info['energy'] = at.get_potential_energy()
+        at.info['virial'] = -at.get_stress(voigt=False)*at.get_volume()
+        at.arrays['forces'] = at.get_forces()
+        del at.calc
+
 def eval_gap_quip(inxyz_file, outxyz_file, gap_file, init_args=None):
     quipcmd = "atoms_filename="+inxyz_file
     temp_file = os.path.splitext(outxyz_file)[0]+'_temp.xyz'
