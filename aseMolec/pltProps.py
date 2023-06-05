@@ -218,39 +218,6 @@ def plot_menvs(menvs, lb, **kwargs):
     if 'title' in kwargs.keys():
         plt.title(kwargs['title'])
 
-def plot_intra_inter_energy(db_test, db_pred):
-    E0_test = ea.get_E0(db_test)
-    E0_pred = ea.get_E0(db_pred)
-    db_test = ea.sel_by_conf_type(db_test, 'LiquidConfigs')
-    db_pred = ea.sel_by_conf_type(db_pred, 'LiquidConfigs')
-
-    RMSE = {}
-    plt.rcParams.update({'font.size': 12})
-    plt.figure(figsize=(8,8), dpi=200)
-    plt.subplot(2,2,1)
-    RMSE['IntraEnergy'] = plot_prop(ea.get_prop(db_test, 'bind', '_intram', True, E0_test).flatten(), \
-                                    ea.get_prop(db_pred, 'bind', '_intram', True, E0_pred).flatten(), \
-                                    title='Intra Energy (ev/atom) ', labs=['DFT', 'GAP'])
-    plt.subplot(2,2,2)
-    RMSE['InterEnergy'] = plot_prop(ea.get_prop(db_test, 'info', 'energy_interm', True).flatten(), \
-                                    ea.get_prop(db_pred, 'info', 'energy_interm', True).flatten(), \
-                                    title='Inter Energy (ev/atom) ', labs=['DFT', 'GAP'])
-    plt.subplot(2,2,3)
-    # RMSE['AtomEnergy'] = plot_prop(np.array([E0_test[k] for k in E0_test]), \
-    #                                np.array([E0_pred[k] for k in E0_pred]), \
-    #                                title='Atomic Energy (ev/atom) ', labs=['DFT', 'GAP'])
-    RMSE['AtomEnergy'] = plot_prop(ea.get_prop(db_test, 'atom', peratom=True, E0=E0_test).flatten(), \
-                                   ea.get_prop(db_pred, 'atom', peratom=True, E0=E0_pred).flatten(), \
-                                   title='Atom Energy (ev/atom) ', labs=['DFT', 'GAP'])
-    plt.subplot(2,2,4)
-    RMSE['TotalEnergy'] = plot_prop(ea.get_prop(db_test, 'info', 'energy', True).flatten(), \
-                                    ea.get_prop(db_pred, 'info', 'energy', True).flatten(), \
-                                    title='Total Energy (ev/atom) ', labs=['DFT', 'GAP'])
-    plt.tight_layout(pad=0.5)
-    plt.savefig('energy.png')
-    plt.close()
-    return RMSE
-
 def plot_hist_thermo(thermos, **kwargs):
     avgs = []
     stds = []
