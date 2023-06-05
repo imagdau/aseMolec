@@ -105,9 +105,11 @@ def find_num_nb(db, Rcut=6.0):
 #designed mainly for extracting diffusion coefficients, assumes no wrapping
 #assumes molIDs exist and molecules are full !!!IMPORTANT, calculation of CM, intertia, torque ... !!!
 #this is a bit redundant with wrap_molecs, maybe could be combined in the future
-def extract_molecs(db, fct=1, intra_inter=False):
+def extract_molecs(db, fct=1, intra_inter=False, prog=False):
     moldb = []
-    for at in db:
+    for i, at in enumerate(db):
+        if prog:
+            print(i)
         if 'molID' not in at.arrays.keys():
             find_molecs([at], fct=fct)
         molID = at.arrays['molID']
@@ -142,6 +144,9 @@ def extract_molecs(db, fct=1, intra_inter=False):
                 ftrn = mass.reshape(-1,1)/M*Fcm #redistributed to atoms
                 if np.allclose(I, 0, atol=1e-6): #this is the case for molecules made of single atoms: Li-ion
                     frot = np.zeros([1,3])
+                #WARNING: not implemented yet: handles linear molecules (singular moment of inertia) by setting frot to zero
+                elif np.allclose(np.linalg.det(I), 0, atol=1e-6):
+                    frot = np.zeros([len(mol),3])
                 else:
                     frot = mass.reshape(-1,1)*np.cross(np.linalg.solve(I, Tcm),mol.positions-cm) #reditributed to atoms
                 molF.append(Fcm)
