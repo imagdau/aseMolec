@@ -240,6 +240,8 @@ def wrap_molecs(db, fct=1.0, full=False, prog=False, returnMols=False):
 
 #splits condensed phase into separate molecules
 def split_molecs(db, scale=1.0):
+    wrap_molecs(db, fct=1.0, full=False, prog=False)
+    ea.hash_atoms(db)
     smdb = []
     if isinstance(scale, float):
         scale = np.ones(len(db))*scale
