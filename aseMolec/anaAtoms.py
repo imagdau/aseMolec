@@ -276,13 +276,14 @@ def split_molecs_dict(db, L=20.0):
 #checked in 02-DFTcalcs-Castep/10-EC4-EMC8-singleMolec-PBEG06/FiniteSizeCheck
 #intra-virial is volume independent, while intra-stress is not
 #therefore decomposition only works for the virial
-def collect_molec_results(db, smdb, fext='', dryrun=False):
+def collect_molec_results(db, smdb, fext='', dryrun=False, molecEng=True):
     for at in db:
         sel = ea.sel_by_uid(smdb, at.info['uid']) #assumes molecules are in the original condensed phase order
         if dryrun:
             print(np.sum(np.abs(at.positions - np.concatenate(ea.get_prop(sel,'arrays','positions'))))) #check if that was true
         else:
-            at.info['energy'+fext+'_intram_mol'] = ea.get_prop(sel, 'info', 'energy'+fext)
+            if molecEng:
+                at.info['energy'+fext+'_intram_mol'] = ea.get_prop(sel, 'info', 'energy'+fext)
             at.info['energy'+fext+'_intram'] = sum(ea.get_prop(sel, 'info', 'energy'+fext))
             if ('virial'+fext) in at.info.keys():
                 at.info['virial'+fext+'_intram'] = sum(ea.get_prop(sel, 'info', 'virial'+fext))
