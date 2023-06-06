@@ -4,7 +4,7 @@ import os
 import numpy as np
 from mace.calculators import MACECalculator
 
-def eval_qap_quippy(db, gap, prog=True):
+def eval_gap_quippy(db, gap, prog=True):
     for i, at in enumerate(db):
         if prog:
             print('Evaluating config:', i)
