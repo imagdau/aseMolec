@@ -322,6 +322,66 @@ def plot_menvs(menvs, lb, **kwargs):
     if 'title' in kwargs.keys():
         plt.title(kwargs['title'])
 
+def plot_intra_inter(db1, db2, labs):
+    plt.figure(figsize=(15,12), dpi=200)
+    plt.subplot(3,3,1)
+    plot_prop(ea.get_prop(db1, 'info', 'energy_intram', True).flatten(), \
+              ea.get_prop(db2, 'info', 'energy_intram', True).flatten(), \
+              title=r'Intra Energy $(\rm eV/atom)$ ', labs=labs, rel=True)
+    plt.subplot(3,3,2)
+    plot_prop(ea.get_prop(db1, 'info', 'energy_interm', True).flatten(), \
+              ea.get_prop(db2, 'info', 'energy_interm', True).flatten(), \
+              title=r'Inter Energy $(\rm eV/atom)$ ', labs=labs, rel=True)
+    plt.subplot(3,3,3)
+    plot_prop(ea.get_prop(db1, 'info', 'energy', True).flatten(), \
+              ea.get_prop(db2, 'info', 'energy', True).flatten(), \
+              title=r'Total Energy $(\rm eV/atom)$ ', labs=labs, rel=True)
+    plt.subplot(3,3,4)
+    plot_prop(np.concatenate(ea.get_prop(db1, 'arrays', 'forces_intram')).flatten(), \
+              np.concatenate(ea.get_prop(db2, 'arrays', 'forces_intram')).flatten(), \
+              title=r'Intra Forces $\rm (eV/\AA)$ ', labs=labs, rel=True)
+    plt.subplot(3,3,5)
+    plot_prop(np.concatenate(ea.get_prop(db1, 'arrays', 'forces_interm')).flatten(), \
+              np.concatenate(ea.get_prop(db2, 'arrays', 'forces_interm')).flatten(), \
+              title=r'Inter Forces $\rm (eV/\AA)$ ', labs=labs, rel=True)
+    plt.subplot(3,3,6)
+    plot_prop(np.concatenate(ea.get_prop(db1, 'arrays', 'forces')).flatten(), \
+              np.concatenate(ea.get_prop(db2, 'arrays', 'forces')).flatten(), \
+              title=r'Total Forces $\rm (eV/\AA)$ ', labs=labs, rel=True)
+    plt.subplot(3,3,7)
+    plot_prop(ea.get_prop(db1, 'info', 'virial_intram', True).flatten(), \
+              ea.get_prop(db2, 'info', 'virial_intram', True).flatten(), \
+              title=r'Intra Virial $(\rm eV/atom)$ ', labs=labs, rel=True)
+    plt.subplot(3,3,8)
+    plot_prop(ea.get_prop(db1, 'info', 'virial_interm', True).flatten(), \
+              ea.get_prop(db2, 'info', 'virial_interm', True).flatten(), \
+              title=r'Inter Virial $(\rm eV/atom)$ ', labs=labs, rel=True)
+    plt.subplot(3,3,9)
+    plot_prop(ea.get_prop(db1, 'info', 'virial', True).flatten(), \
+              ea.get_prop(db2, 'info', 'virial', True).flatten(), \
+              title=r'Total Virial $(\rm eV/atom)$ ', labs=labs, rel=True)
+    plt.tight_layout()
+    
+def plot_trans_rot_vib(db1, db2, labs):
+    plt.figure(figsize=(16,5), dpi=200)
+    plt.subplot(1,4,1)
+    plot_prop(np.concatenate(ea.get_prop(db1, 'arrays', 'forces_trans')).flatten(), \
+              np.concatenate(ea.get_prop(db2, 'arrays', 'forces_trans')).flatten(), \
+              title=r'Translational Forces $\rm (eV/\AA)$ ', labs=labs, rel=True)
+    plt.subplot(1,4,2)
+    plot_prop(np.concatenate(ea.get_prop(db1, 'arrays', 'forces_rot')).flatten(), \
+              np.concatenate(ea.get_prop(db2, 'arrays', 'forces_rot')).flatten(), \
+              title=r'Rotational Forces $\rm (eV/\AA)$ ', labs=labs, rel=True)
+    plt.subplot(1,4,3)
+    plot_prop(np.concatenate(ea.get_prop(db1, 'arrays', 'forces_vib')).flatten(), \
+              np.concatenate(ea.get_prop(db2, 'arrays', 'forces_vib')).flatten(), \
+              title=r'Vibrational Forces $\rm (eV/\AA)$ ', labs=labs, rel=True)
+    plt.subplot(1,4,4)
+    plot_prop(np.concatenate(ea.get_prop(db1, 'arrays', 'forces')).flatten(), \
+              np.concatenate(ea.get_prop(db2, 'arrays', 'forces')).flatten(), \
+              title=r'Total Forces $\rm (eV/\AA)$ ', labs=labs, rel=True)
+    plt.tight_layout()
+
 def plot_intra_inter_energy(db_test, db_pred):
     E0_test = ea.get_E0(db_test)
     E0_pred = ea.get_E0(db_pred)
