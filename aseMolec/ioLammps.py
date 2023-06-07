@@ -1,4 +1,6 @@
-#copied from https://wiki.fysik.dtu.dk/ase/_modules/ase/io/lammpsrun.html
+#copied from https://gitlab.com/ase/ase/-/blob/master/ase/io/lammpsrun.py
+#web: https://wiki.fysik.dtu.dk/ase/_modules/ase/io/lammpsrun.html
+#tweaked for specific use in this work
 
 import gzip
 import struct
