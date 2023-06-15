@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+from matplotlib import gridspec
+from matplotlib.ticker import StrMethodFormatter
 import numpy as np
 from aseMolec import extAtoms as ea
 import re
@@ -188,6 +190,30 @@ def plot_hist(fnames, **kwargs):
     if lb:
         plt.legend()
     return np.array(avgs), np.array(stds)
+
+def plot_traj_hist(fnames, col=2, Navg=1, start=0, bins=50, legend=None, labs=None, ylims=None, colors=np.array([]), title=None, fs=10, Nsamp=4000):
+    plt.rcParams.update({'font.size': fs})
+    if not colors.size:
+        colors = np.array(cm.get_cmap('tab10').colors)
+    gs = gridspec.GridSpec(1, 2, width_ratios=[5, 1], wspace=0)
+    plt.subplot(gs[0])
+    if legend:
+        plot_traj(fnames, col=col, Navg=Navg, legend=legend, labs=labs[0:2], title=title, colors=colors, alpha=0.8)
+    else:
+        plot_traj(fnames, col=col, Navg=Navg, labs=labs[0:2], title=title, colors=colors, alpha=0.8)
+    if ylims:
+        plt.ylim(ylims)
+    ylim = plt.gca().get_ylim()
+    plt.gca().yaxis.set_major_formatter(StrMethodFormatter('{x:,.2f}'))
+    plt.subplot(gs[1])
+    avgs, errs = plot_hist(fnames, col=col, start=start, bins=bins, labs=labs[1:3], title=None, orient='horizontal', htype='stepfilled', colors=colors, alpha=0.8, Navg=Nsamp)
+    plt.ylim(ylim)
+    plt.xticks([])
+    plt.yticks([])
+    plt.xlabel('')
+    plt.ylabel('')
+    plt.tight_layout()
+    return avgs, errs
 
 def plot_menvs(menvs, lb, **kwargs):
     if 'nbins' in kwargs.keys():
