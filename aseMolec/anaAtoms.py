@@ -54,7 +54,7 @@ def mol_config(molSym):
     d = dict(Counter(molSym))
     name = ''
     name_UNK = ''
-    for k in d:
+    for k in sorted(list(d.keys())):
         if 'UNK_' in k:
             name_UNK += (k + '(%d)' % d[k] + ':')
         else:
