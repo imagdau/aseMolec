@@ -39,6 +39,15 @@ def sel_by_prop(db, prop):
             reflist.append(at)
     return reflist
 
+#select configurations which have an info field with certain value
+def sel_by_info_val(db, info_key, info_val):
+    sel = []
+    for at in db:
+        if info_key in at.info.keys():
+            if at.info[info_key] == info_val:
+                sel += [at]
+    return sel
+
 #selects configurations by uid
 def sel_by_uid(db, uid):
     reflist = []
