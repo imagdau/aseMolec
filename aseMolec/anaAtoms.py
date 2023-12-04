@@ -171,6 +171,72 @@ def extract_molecs(db, fct=1, intra_inter=False, prog=False):
             at.arrays['forces_vib'] = at.arrays['forces']-at.arrays['forces_trans']-at.arrays['forces_rot']
     return moldb
 
+def extract_molecs_tag(db, fct=1, intra_inter=False, prog=False, tag=''):
+    moldb = []
+    for i, at in enumerate(db):
+        if prog:
+            print(i)
+        if 'molID' not in at.arrays.keys():
+            find_molecs([at], fct=fct)
+        molID = at.arrays['molID']
+        molCM = []
+        molM = []
+        molI = []
+        molSym = []
+        molQ = []
+        molD = []
+        molF = []
+        molT = []
+        atftrn = []
+        atfrot = []
+        for m in np.unique(molID):
+            mol = at[molID==m] #copy by value
+            mass = mol.get_masses()
+            cm = np.sum(mol.positions*mass.reshape(-1,1), axis=0)/np.sum(mass)
+            M = np.sum(mass)
+            I = mom_inertia(mol)
+            molCM.append(cm)
+            molM.append(M)
+            molI.append(I.flatten())
+            molSym.append(mol_chem_name(mol.symbols.get_chemical_formula()))
+            if tag+'initial_charges' in at.arrays:
+                charge = mol.arrays[tag+'initial_charges']
+                D = np.sum((mol.positions-cm)*charge.reshape(-1,1), axis=0) #subtract cm, so dipole is also correct for charges molecules, e.g. PF6
+                molQ.append(np.sum(charge))
+                molD.append(D)
+            if tag+'forces' in at.arrays:
+                Fcm = np.sum(mol.arrays[tag+'forces'], axis=0)
+                Tcm = np.sum(np.cross(mol.positions-cm, mol.arrays[tag+'forces'], axis=1), axis=0)
+                ftrn = mass.reshape(-1,1)/M*Fcm #redistributed to atoms
+                if np.allclose(I, 0, atol=1e-6): #this is the case for molecules made of single atoms: Li-ion
+                    frot = np.zeros([1,3])
+                #WARNING: not implemented yet: handles linear molecules (singular moment of inertia) by setting frot to zero
+                elif np.allclose(np.linalg.det(I), 0, atol=1e-6):
+                    frot = np.zeros([len(mol),3])
+                else:
+                    frot = mass.reshape(-1,1)*np.cross(np.linalg.solve(I, Tcm),mol.positions-cm) #reditributed to atoms
+                molF.append(Fcm)
+                molT.append(Tcm)
+                atftrn.append(ftrn)
+                atfrot.append(frot)
+        newmol = Atoms(positions=np.array(molCM), pbc=True, cell=at.cell)
+        newmol.set_masses(molM)
+        newmol.arrays['molSym'] = np.array(molSym)
+        newmol.arrays['momInertia'] = np.array(molI)
+        if molQ:
+            newmol.arrays[tag+'initial_charges'] = np.array(molQ)
+            newmol.arrays[tag+'dipoles'] = np.array(molD)
+            newmol.arrays[tag+'dipoles_abs'] = np.sqrt(np.sum(np.array(molD)**2, axis=1))/0.2081943 #from e*A to Debye
+        if molF:
+            newmol.arrays[tag+'forces'] = np.array(molF)
+            newmol.arrays[tag+'torques'] = np.array(molT)
+        moldb.append(newmol)
+        if intra_inter:
+            at.arrays[tag+'forces_trans'] = np.concatenate(atftrn)
+            at.arrays[tag+'forces_rot'] = np.concatenate(atfrot)
+            at.arrays[tag+'forces_vib'] = at.arrays[tag+'forces']-at.arrays[tag+'forces_trans']-at.arrays[tag+'forces_rot']
+    return moldb
+
 #assumes coordinates are unwrapped
 def mom_inertia(mol):
     m = mol.get_masses()
