@@ -9,6 +9,7 @@ from ase.ga.utilities import get_rdf
 import ase.data
 import warnings
 from collections import Counter
+import hashlib
 chem_syms = ase.data.chemical_symbols
 
 #extends fct to dictionary if needed
@@ -305,7 +306,7 @@ def wrap_molecs(db, fct=1.0, full=False, prog=False, returnMols=False):
         return moldb
 
 #wraps all molecules over a list of configurations, given a mask
-def wrap_molecs_partial(db, fct=1.0, full=False, prog=False, mask=None):
+def wrap_molecs_partial(db, fct=1.0, full=False, prog=False, mask=None, wrap=True):
     iter = 0
     for at in db:
         if prog:
@@ -323,10 +324,12 @@ def wrap_molecs_partial(db, fct=1.0, full=False, prog=False, mask=None):
             if m>=0:
                 mol = at[molID==m] #copy by value
                 wrap_molec(mol, fct, full)
-                at.positions[molID==m,:] = mol.positions
+                if wrap: #this is counterintuitive given the name of the function, but for now it's the easiet way to achieve this
+                    at.positions[molID==m,:] = mol.positions
                 molSym = mol.symbols.get_chemical_formula()
                 at.arrays['molSym'][molID==m] = molSym
-                at.arrays['molHash'][molID==m] = (hash(molSym) % 8999) + 1001
+                # at.arrays['molHash'][molID==m] = (hash(molSym) % 8999) + 1001 #this is not deterministic
+                at.arrays['molHash'][molID==m] = hashlib.sha256(molSym.encode()).hexdigest()[:4]
         at.info['Nmols'] = max(molID)
 
 #splits condensed phase into separate molecules
