@@ -304,6 +304,31 @@ def wrap_molecs(db, fct=1.0, full=False, prog=False, returnMols=False):
     if returnMols:
         return moldb
 
+#wraps all molecules over a list of configurations, given a mask
+def wrap_molecs_partial(db, fct=1.0, full=False, prog=False, mask=None):
+    iter = 0
+    for at in db:
+        if prog:
+            iter += 1
+            print(iter)
+        if 'molID' not in at.arrays.keys():
+            masked_at = at[mask]
+            find_molecs([masked_at], fct)
+            at.arrays['molID'] = np.array([-1]*len(at))
+            at.arrays['molID'][mask] = masked_at.arrays['molID']
+        molID = at.arrays['molID']
+        at.arrays['molSym'] = np.array(['None']*len(at))
+        at.arrays['molHash'] = np.array(['0000']*len(at))
+        for m in np.unique(molID):
+            if m>=0:
+                mol = at[molID==m] #copy by value
+                wrap_molec(mol, fct, full)
+                at.positions[molID==m,:] = mol.positions
+                molSym = mol.symbols.get_chemical_formula()
+                at.arrays['molSym'][molID==m] = molSym
+                at.arrays['molHash'][molID==m] = (hash(molSym) % 8999) + 1001
+        at.info['Nmols'] = max(molID)
+
 #splits condensed phase into separate molecules
 def split_molecs(db, scale=1.0):
     wrap_molecs(db, fct=1.0, full=False, prog=False)
