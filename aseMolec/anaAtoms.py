@@ -328,9 +328,7 @@ def wrap_molecs_partial(db, fct=1.0, full=False, prog=False, mask=None, wrap=Tru
                     at.positions[molID==m,:] = mol.positions
                 molSym = mol.symbols.get_chemical_formula()
                 at.arrays['molSym'][molID==m] = molSym
-                # at.arrays['molHash'][molID==m] = (hash(molSym) % 8999) + 1001 #this is not deterministic
                 at.arrays['molHash'][molID==m] = hashlib.sha256(molSym.encode()).hexdigest()[:4]
-        at.info['Nmols'] = max(molID)
 
 #splits condensed phase into separate molecules
 def split_molecs(db, scale=1.0):
