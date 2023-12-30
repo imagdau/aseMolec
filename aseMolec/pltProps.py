@@ -42,11 +42,15 @@ def plot_prop(prop1, prop2, **kwargs):
         return_rel = kwargs['return_rel']
     else:
         return_rel = False
+    if 'rast' in kwargs.keys():
+        rast = kwargs['rast']
+    else:
+        rast = False
     if 'xy' in kwargs.keys():
         xy = kwargs['xy']
     else:
         xy = [0.35,0.04]
-    plt.scatter(prop1, prop2, s=3.0, c=cols, cmap=cmap)
+    plt.scatter(prop1, prop2, s=3.0, c=cols, cmap=cmap, rasterized=rast)
     if rel:
         plt.text(xy[0], xy[1], "  RMSE = {0:.4f}\nRRMSE = {1:.4f}".format(RMSE, RRMSE), transform=plt.gca().transAxes)
     else:
