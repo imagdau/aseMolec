@@ -2,7 +2,6 @@ import ase.io
 from ase import Atoms
 import os
 import numpy as np
-from mace.calculators import MACECalculator
 
 def eval_gap_quippy(db, gap, prog=True):
     for i, at in enumerate(db):
@@ -33,13 +32,19 @@ def eval_gap_quip(inxyz_file, outxyz_file, gap_file, init_args=None):
     ase.io.write(outxyz_file, db)
     os.system('rm -rfv '+temp_file)
 
-def eval_mace(inxyz_file, outxyz_file, mace_file, init_args=None):
-    db = ase.io.read(inxyz_file, ':')
-    atomic_numbers = list(np.unique([n for at in db for n in at.numbers]))
-    calc = MACECalculator(model_path=mace_file, r_max=6.0, device='cpu', atomic_numbers=atomic_numbers, default_dtype="float64")
-    for at in db:
-        at.calc = calc
-        at.info['energy'] = at.get_potential_energy()
-        at.arrays['forces'] = at.get_forces()
-        del at.calc
-    ase.io.write(outxyz_file, db)
+try:
+    from mace.calculators import MACECalculator
+except ImportError:
+    pass
+else:
+    def eval_mace(inxyz_file, outxyz_file, mace_file, init_args=None):
+        db = ase.io.read(inxyz_file, ':')
+        atomic_numbers = list(np.unique([n for at in db for n in at.numbers]))
+        calc = MACECalculator(model_path=mace_file, r_max=6.0, device='cpu', atomic_numbers=atomic_numbers, default_dtype="float64")
+        for at in db:
+            at.calc = calc
+            at.info['energy'] = at.get_potential_energy()
+            at.arrays['forces'] = at.get_forces()
+            del at.calc
+        ase.io.write(outxyz_file, db)
+
