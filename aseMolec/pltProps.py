@@ -538,7 +538,11 @@ def simpleplot(db, i, j, **kwargs):
         u2 = ' ('+db[k2]['units']+')'
     else:
         u2 = ''
-    plt.plot(db[k1]['data'], db[k2]['data'], **kwargs)
+    if 'skip' in kwargs:
+        skip = kwargs['skip']
+    else:
+        skip = 0
+    plt.plot(db[k1]['data'][skip:], db[k2]['data'][skip:], **kwargs)
     plt.xlabel(k1+u1)
     plt.ylabel(k2+u2)
     
