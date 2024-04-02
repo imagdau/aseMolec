@@ -539,7 +539,7 @@ def simpleplot(db, i, j, **kwargs):
     else:
         u2 = ''
     if 'skip' in kwargs:
-        skip = kwargs['skip']
+        skip = kwargs.pop('skip')
     else:
         skip = 0
     plt.plot(db[k1]['data'][skip:], db[k2]['data'][skip:], **kwargs)
