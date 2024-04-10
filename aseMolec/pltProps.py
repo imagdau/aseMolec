@@ -526,6 +526,15 @@ def loadtxttag(fname):
             db[fld] = {'data':dat[:,i]}
     return db
 
+def convert_units(dat, key, units, fact):
+    for k in dat:
+        dat[k][key]['units'] = units
+        dat[k][key]['data'] *= fact
+
+def rename_key(dat, key_old, key_new):
+    for k in dat:
+        dat[k][key_new] = dat[k].pop(key_old)
+
 def simpleplot(db, i, j, **kwargs):
     keys = list(db)
     k1 = keys[i]
