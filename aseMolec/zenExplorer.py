@@ -64,3 +64,13 @@ class TrainData:
 
     def __repr__(self):
         return self.to_dict().__repr__()
+
+
+# class MLIP:
+
+#     def __init__(self, zip_parent, path):
+#         self.config_desc = Train
+#         self.ab_initio_level ab_initio_level
+#         self.mlip_code = ab_initio_code
+#         self.zip_parent = zip_parent
+#         self.path = path
