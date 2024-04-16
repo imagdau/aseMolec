@@ -535,10 +535,14 @@ def rename_key(dat, key_old, key_new):
     for k in dat:
         dat[k][key_new] = dat[k].pop(key_old)
 
-def simpleplot(db, i, j, **kwargs):
-    keys = list(db)
-    k1 = keys[i]
-    k2 = keys[j]
+def simpleplot(db, i, j, byKey=False, **kwargs):
+    if byKey:
+        k1 = i
+        k2 = j
+    else:
+        keys = list(db)
+        k1 = keys[i]
+        k2 = keys[j]
     if 'units' in db[k1]:
         u1 = ' ('+db[k1]['units']+')'
     else:
