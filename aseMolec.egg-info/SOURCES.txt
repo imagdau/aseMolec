@@ -1,0 +1,12 @@
+README.md
+setup.py
+aseMolec/__init__.py
+aseMolec/anaAtoms.py
+aseMolec/evalUtils.py
+aseMolec/extAtoms.py
+aseMolec/ioLammps.py
+aseMolec/pltProps.py
+aseMolec.egg-info/PKG-INFO
+aseMolec.egg-info/SOURCES.txt
+aseMolec.egg-info/dependency_links.txt
+aseMolec.egg-info/top_level.txt

@@ -22,29 +22,28 @@ def equal(self, other, prec=1e-12):
             (np.abs((self.cell-other.cell))<prec).all() and
             (self.pbc == other.pbc).all())
 
-#prints all available properties in list of Atoms ~Panos edit to include properties stored in calc
+#prints all available properties in list of Atoms
 def check_keys(db):
     for at in db:
         if 'config_type' in at.info:
-            print([at.info['config_type']]+list(at.info.keys())+list(at.arrays.keys())+list(at.calc.__dict__["results"].keys())) # ~Panos addition of calc results
+            print([at.info['config_type']]+list(at.info.keys())+list(at.arrays.keys()))
         else:
-            print(list(at.info.keys())+list(at.arrays.keys())+list(at.calc.__dict__["results"].keys())) # ~Panos addition of calc results
+            print(list(at.info.keys())+list(at.arrays.keys()))
 
 #selects configurations which have property
 def sel_by_prop(db, prop):
     reflist = []
     for at in db:
-        props = list(at.info.keys())+list(at.arrays.keys())+list(at.calc.__dict__["results"].keys()) # ~Panos addition of calc results
+        props = list(at.info.keys())+list(at.arrays.keys())
         if prop in props:
             reflist.append(at)
     return reflist
 
-#select configurations which have an info or calc results field with certain value
+#select configurations which have an info field with certain value
 def sel_by_info_val(db, info_key, info_val):
     sel = []
     for at in db:
-        info_calc_keys = list(at.info.keys())+list(at.calc.__dict__["results"].keys()) # ~Panos addition of calc results
-        if info_key in info-calc_keys:
+        if info_key in at.info.keys():
             if at.info[info_key] == info_val:
                 sel += [at]
     return sel
@@ -130,8 +129,6 @@ def get_prop(db, type, prop='', peratom=False, E0={}):
         N = lambda a : 1
     if type == 'info':
         return np.array(list(map(lambda a : a.info[prop]/N(a), db)))
-    if type == 'calc':
-        return np.array(list(map(lambda a : a.calc.__dict__["results"][prop]/N(a), db)), dtype=object) # ~Panos Added this, need dtype=object because both forces and energy are saved in the results dict
     if type == 'arrays':
         return np.array(list(map(lambda a : a.arrays[prop]/N(a), db)), dtype=object)
     if type == 'cell':
