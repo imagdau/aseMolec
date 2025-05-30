@@ -375,20 +375,19 @@ def collect_molec_results(db, smdb, fext='', dryrun=False, molecEng=True):
             print(np.sum(np.abs(at.positions - np.concatenate(ea.get_prop(sel,'arrays','positions'))))) #check if that was true
         else:
             if molecEng:
-                at.info['energy'+fext+'_intram_mol'] = ea.get_prop(sel, 'info', 'energy'+fext)
-            at.info['energy'+fext+'_intram'] = sum(ea.get_prop(sel, 'info', 'energy'+fext))
+                at.info['energy'+fext+'_intram_mol'] = ea.get_prop(sel, 'calc', 'energy'+fext)
+            at.info['energy'+fext+'_intram'] = sum(ea.get_prop(sel, 'calc', 'energy'+fext))
             if ('virial'+fext) in at.info.keys():
                 at.info['virial'+fext+'_intram'] = sum(ea.get_prop(sel, 'info', 'virial'+fext))
-            at.arrays['forces'+fext+'_intram'] = np.concatenate(ea.get_prop(sel, 'arrays', 'forces'+fext)).astype(float)
-            at.info['energy'+fext+'_interm'] = at.info['energy'+fext]-at.info['energy'+fext+'_intram']
+            at.arrays['forces'+fext+'_intram'] = np.concatenate(ea.get_prop(sel, 'calc', 'forces'+fext)).astype(float)
+            at.info['energy'+fext+'_interm'] = at.calc.__dict__["results"]['energy'+fext]-at.info['energy'+fext+'_intram']
             if ('virial'+fext) in at.info.keys():
                 at.info['virial'+fext+'_interm'] = at.info['virial'+fext]-at.info['virial'+fext+'_intram']
-            at.arrays['forces'+fext+'_interm'] = at.arrays['forces'+fext]-at.arrays['forces'+fext+'_intram']
+            at.arrays['forces'+fext+'_interm'] = at.calc.__dict__["results"]['forces'+fext]-at.arrays['forces'+fext+'_intram']
 
 #collects molecules without assuming any order, but expects mID in info
 def collect_molec_results_dict(db, smdb, fext='', dryrun=False):
     for at in db:
-        del at.calc
         uid = at.info['uid']
         sm = ea.sel_by_uid(smdb, uid)
         idx = np.argsort(ea.get_prop(sm, 'info', 'mID'))
@@ -402,16 +401,26 @@ def collect_molec_results_dict(db, smdb, fext='', dryrun=False):
                 mdiffs += [np.max(np.abs(diffs-diffs[0,:]))]
             print(np.max(mdiffs))
         else:
-            # at.info['energy'+fext+'_intram_mol'] = ea.get_prop(sel, 'info', 'energy'+fext)
-            at.info['energy'+fext+'_intram'] = sum(ea.get_prop(sel, 'info', 'energy'+fext))
-            at.info['virial'+fext+'_intram'] = sum(ea.get_prop(sel, 'info', 'virial'+fext))
-            at.arrays['forces'+fext+'_intram'] = np.concatenate(ea.get_prop(sel, 'arrays', 'forces'+fext)).astype(float)
-            at.info['energy'+fext+'_interm'] = at.info['energy'+fext]-at.info['energy'+fext+'_intram']
-            at.info['virial'+fext+'_interm'] = at.info['virial'+fext]-at.info['virial'+fext+'_intram']
-            at.arrays['forces'+fext+'_interm'] = at.arrays['forces'+fext]-at.arrays['forces'+fext+'_intram']
-            if ('initial_charges'+fext) in at.info.keys():
-                at.arrays['initial_charges'+fext+'_intram'] = np.concatenate(ea.get_prop(sel, 'arrays', 'initial_charges'+fext)).astype(float)
-                at.arrays['initial_charges'+fext+'_interm'] = at.arrays['initial_charges'+fext]-at.arrays['initial_charges'+fext+'_intram']
+            if fext=="":
+                at.info['energy'+fext+'_intram'] = sum(ea.get_prop(sel, 'calc', 'energy'+fext))
+                at.info['virial'+fext+'_intram'] = sum(ea.get_prop(sel, 'info', 'virial'+fext))
+                at.arrays['forces'+fext+'_intram'] = np.concatenate(ea.get_prop(sel, 'calc', 'forces'+fext)).astype(float)
+                at.info['energy'+fext+'_interm'] = at.calc.__dict__["results"]['energy'+fext]-at.info['energy'+fext+'_intram']
+                at.info['virial'+fext+'_interm'] = at.info['virial'+fext]-at.info['virial'+fext+'_intram']
+                at.arrays['forces'+fext+'_interm'] = at.calc.__dict__["results"]['forces'+fext]-at.arrays['forces'+fext+'_intram']
+                if ('initial_charges'+fext) in at.info.keys():
+                    at.arrays['initial_charges'+fext+'_intram'] = np.concatenate(ea.get_prop(sel, 'arrays', 'initial_charges'+fext)).astype(float)
+                    at.arrays['initial_charges'+fext+'_interm'] = at.arrays['initial_charges'+fext]-at.arrays['initial_charges'+fext+'_intram']
+            else:
+                at.info['energy'+fext+'_intram'] = sum(ea.get_prop(sel, 'calc', 'energy'+fext))
+                at.info['virial'+fext+'_intram'] = sum(ea.get_prop(sel, 'info', 'virial'+fext))
+                at.arrays['forces'+fext+'_intram'] = np.concatenate(ea.get_prop(sel, 'calc', 'forces'+fext)).astype(float)
+                at.info['energy'+fext+'_interm'] = at.calc.__dict__["results"]['energy'+fext]-at.info['energy'+fext+'_intram']
+                at.info['virial'+fext+'_interm'] = at.info['virial'+fext]-at.info['virial'+fext+'_intram']
+                at.arrays['forces'+fext+'_interm'] = at.calc.__dict__["results"]['forces'+fext]-at.arrays['forces'+fext+'_intram']
+                if ('initial_charges'+fext) in at.info.keys():
+                    at.arrays['initial_charges'+fext+'_intram'] = np.concatenate(ea.get_prop(sel, 'arrays', 'initial_charges'+fext)).astype(float)
+                    at.arrays['initial_charges'+fext+'_interm'] = at.arrays['initial_charges'+fext]-at.arrays['initial_charges'+fext+'_intram']
 
 #starting from one configuration, adjusts the volume according to vol_fracs
 def scan_vol(at, vol_fracs, frozen=True):
