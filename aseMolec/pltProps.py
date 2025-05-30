@@ -526,10 +526,23 @@ def loadtxttag(fname):
             db[fld] = {'data':dat[:,i]}
     return db
 
-def simpleplot(db, i, j, **kwargs):
-    keys = list(db)
-    k1 = keys[i]
-    k2 = keys[j]
+def convert_units(dat, key, units, fact):
+    for k in dat:
+        dat[k][key]['units'] = units
+        dat[k][key]['data'] *= fact
+
+def rename_key(dat, key_old, key_new):
+    for k in dat:
+        dat[k][key_new] = dat[k].pop(key_old)
+
+def simpleplot(db, i, j, byKey=False, **kwargs):
+    if byKey:
+        k1 = i
+        k2 = j
+    else:
+        keys = list(db)
+        k1 = keys[i]
+        k2 = keys[j]
     if 'units' in db[k1]:
         u1 = ' ('+db[k1]['units']+')'
     else:
@@ -538,7 +551,11 @@ def simpleplot(db, i, j, **kwargs):
         u2 = ' ('+db[k2]['units']+')'
     else:
         u2 = ''
-    plt.plot(db[k1]['data'], db[k2]['data'], **kwargs)
+    if 'skip' in kwargs:
+        skip = kwargs.pop('skip')
+    else:
+        skip = 0
+    plt.plot(db[k1]['data'][skip:], db[k2]['data'][skip:], **kwargs)
     plt.xlabel(k1+u1)
     plt.ylabel(k2+u2)
     
