@@ -139,6 +139,8 @@ def extract_molecs(db, fct=1, intra_inter=False, prog=False):
                 D = np.sum((mol.positions-cm)*charge.reshape(-1,1), axis=0) #subtract cm, so dipole is also correct for charges molecules, e.g. PF6
                 molQ.append(np.sum(charge))
                 molD.append(D)
+            if 'atomic_dipoles' in at.arrays:
+                molD[-1] += mol.arrays['atomic_dipoles'].sum(0)
             if 'forces' in at.arrays:
                 Fcm = np.sum(mol.arrays['forces'], axis=0)
                 Tcm = np.sum(np.cross(mol.positions-cm, mol.arrays['forces'], axis=1), axis=0)
