@@ -590,12 +590,12 @@ def mol_envs(moldb, lbs, Rcut=6.0, returnEnvs=False):
                 at.arrays['molEnv'] = buf
     return menvs
 
-def compute_rdfs(at, rmax, nbins):
+def compute_rdfs(at, rmax, nbins, fct=1.0):
     rdfs = {}
     N = len(at)
     z_counts = dict([(x,y) for x,y in zip(*np.unique(at.numbers, return_counts=True))])
     dm = at.get_all_distances(mic=True)
-    intra_mask = find_molecs([at], return_mask=True)[0]
+    intra_mask = find_molecs([at], fct=1.0, return_mask=True)[0]
     for z1 in z_counts:
         for z2 in z_counts:
             if z2<z1:
@@ -615,24 +615,24 @@ def compute_rdfs(at, rmax, nbins):
             rdfs[chem_syms[z1]+chem_syms[z2]+'_inter'] = rdf*z_counts[z1]/N
     return rdfs, r
 
-def compute_rdfs_traj_avg(traj, rmax, nbins):
+def compute_rdfs_traj_avg(traj, rmax, nbins, fct=1.0):
     N = len(traj)
-    rdfs, r = compute_rdfs(traj[0], rmax, nbins)
+    rdfs, r = compute_rdfs(traj[0], rmax, nbins, fct)
     for at in traj[1:]:
-        tmp_rdfs, _ = compute_rdfs(at, rmax, nbins)
+        tmp_rdfs, _ = compute_rdfs(at, rmax, nbins, fct)
         for d in tmp_rdfs:
             rdfs[d] += tmp_rdfs[d]
     for d in rdfs:
         rdfs[d] /= N
     return rdfs, r
 
-def compute_rdfs_traj_stats(traj, rmax, nbins, win=1):
+def compute_rdfs_traj_stats(traj, rmax, nbins, win=1, fct=1.0):
     N = np.floor(len(traj)/win).astype(int)
-    rdfs, r = compute_rdfs_traj_avg(traj[slice(0, win)], rmax, nbins)
+    rdfs, r = compute_rdfs_traj_avg(traj[slice(0, win)], rmax, nbins, fct)
     for d in rdfs:
         rdfs[d] = [rdfs[d]]
     for i in range(1,N):
-        tmp_rdfs, _ = compute_rdfs_traj_avg(traj[slice(win*i, win*(i+1))], rmax, nbins)
+        tmp_rdfs, _ = compute_rdfs_traj_avg(traj[slice(win*i, win*(i+1))], rmax, nbins, , fct)
         for d in tmp_rdfs:
             rdfs[d] += [tmp_rdfs[d]]
     for d in rdfs:
