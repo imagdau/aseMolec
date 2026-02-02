@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aseMolec"
+version = "1.0.0"
+description = "Extension for ASE atoms"
+readme = "README.md"
+requires-python = ">=3.8"
+
+authors = [
+    { name = "Ioan-Bogdan Magdau", email = "i.b.magdau@gmail.com" }
+]
+
+dependencies = [
+    "numpy",
+    "ase",
+    "ase-ga",
+    "matplotlib",
+    "scipy"
+]
+
+[project.urls]
+Homepage = "https://github.com/imagdau/Phython-Atoms.git"
+
+[tool.setuptools.packages.find]
+where = ["."]

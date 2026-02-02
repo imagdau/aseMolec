@@ -5,7 +5,7 @@ from scipy import sparse
 import numpy as np
 from aseMolec import extAtoms as ea
 import scipy.spatial
-from ase.ga.utilities import get_rdf
+from ase_ga.utilities import get_rdf
 import ase.data
 import warnings
 from collections import Counter
