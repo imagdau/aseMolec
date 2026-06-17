@@ -50,11 +50,23 @@ def plot_prop(prop1, prop2, **kwargs):
         xy = kwargs['xy']
     else:
         xy = [0.35,0.04]
-    plt.scatter(prop1, prop2, s=3.0, c=cols, cmap=cmap, rasterized=rast)
-    if rel:
-        plt.text(xy[0], xy[1], "  RMSE = {0:.4f}\nRRMSE = {1:.4f}".format(RMSE, RRMSE), transform=plt.gca().transAxes)
+    if 'label' in kwargs.keys():
+        label = kwargs['label'].format(RMSE)
     else:
-        plt.text(xy[0], xy[1], "  RMSE = {0:.4f}".format(RMSE), transform=plt.gca().transAxes)
+        label = None
+    plt.scatter(prop1, prop2, s=3.0, c=cols, cmap=cmap, rasterized=rast, label=label)
+    if label:
+        plt.legend(
+            handletextpad=0.0,   # marker ↔ text spacing
+            labelspacing=0.2,    # vertical spacing between entries
+            borderpad=0.1        # padding inside legend box
+        )
+    else:
+        if rel:
+            plt.text(xy[0], xy[1], "  RMSE = {0:.4f}\nRRMSE = {1:.4f}".format(RMSE, RRMSE), transform=plt.gca().transAxes)
+        else:
+            plt.text(xy[0], xy[1], "  RMSE = {0:.4f}".format(RMSE), transform=plt.gca().transAxes)
+
     plt.xlim([lmin, lmax])
     plt.ylim([lmin, lmax])
     plt.plot([lmin, lmax], [lmin, lmax], '--', linewidth=1, color='gray')
